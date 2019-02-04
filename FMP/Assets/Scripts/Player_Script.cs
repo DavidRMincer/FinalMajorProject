@@ -10,136 +10,228 @@ enum movementState
     SNEAKING,
     RUNNING,
     JUMPING,
+    FALLING,
+    VAULTING,
     CLIMBING,
+    MANTLING,
     SLIDING
 };
 
 public class Player_Script : MonoBehaviour {
 
-    private float           currentSpeed;
+    private float           currentSpeed,
+                            currentVaultDuration,
+                            currentMantleDuration,
+                            currentSlideDuration,
+                            currentJumpSpeed,
+                            distFromYBoundary,
+                            height;
     private movementState   currentMoveState;
     private Rigidbody       rb;
     private Vector3         moveDirection;
-    private bool            canJump;
+    private bool            canClimb,
+                            canVault,
+                            canMantle;
+    private Collider        playerCollider;
 
     public float            walkSpeed,
                             runSpeed,
                             jumpSpeed,
                             slideSpeed,
                             climbSpeed,
-                            currentJumpForce,
-                            sneakSpeed;
+                            gravity,
+                            terminalVelocity,
+                            sneakSpeed,
+                            vaultDuration,
+                            mantleDuration,
+                            slideDuration;
 
-	// Use this for initialization
+	
 	void Start ()
     {
-        canJump = false;
+        //Set action conditions to false
+        canClimb = false;
+        canVault = false;
+        canMantle = false;
+
+        //Set current action durations to max
+        currentVaultDuration = vaultDuration;
+        currentMantleDuration = mantleDuration;
+        currentSlideDuration = slideDuration;
+
+        //Set default movement state
         currentMoveState = movementState.STATIONARY;
+
+        //Set rigidbody
         rb = GetComponent<Rigidbody>();
-	}
+
+        //Set collider
+        playerCollider = GetComponent<Collider>();
+
+        //Set height
+        height = playerCollider.bounds.size.y;
+
+        //Set distance from ground
+        distFromYBoundary = playerCollider.bounds.extents.y;
+
+    }
 
     private void FixedUpdate()
     {
-        playerInput();
-        playerMove(
-            Input.GetAxis("Horizontal"),
-            Input.GetAxis("Verticle"));
+        UpdateMoveState();
+        Debug.Log(currentMoveState);
     }
 
-    // Change state based on player input
-    void playerInput()
+    ////////////////////////////////////////////
+    //Update current movement state
+    ////////////////////////////////////////////
+    private void UpdateMoveState()
     {
         switch (currentMoveState)
         {
             case movementState.STATIONARY:
-                //Change to jump
-                if (Input.GetButtonDown("Jump"))
-                {
-                    currentMoveState = movementState.JUMPING;
-                }
-                //Change to crouch
-                else if (Input.GetButtonDown("Crouch"))
-                {
-                    currentMoveState = movementState.CROUCHING;
-                }
+                //Change to falling
+                if (!OnGround())
+                    Fall();
+
                 //Change to walking
-                else if (Input.GetAxis("Vertical") != 0 ||
-                    Input.GetAxis("Horizontal") != 0)
-                {
-                    currentMoveState = movementState.WALKING;
-                }
+                else if (Input.GetAxis("Vertical") != 0.0f ||
+                    Input.GetAxis("Horizontal") != 0.0f)
+                    Walk();
+
+                //Change to crouching
+                else if (Input.GetButtonDown("Crouch"))
+                    Crouch();
+
+                //Change to jumping
+                else if (Input.GetButtonDown("Jump"))
+                    Jump();
                 break;
 
             case movementState.CROUCHING:
+                //Change to falling
+                if (!OnGround())
+                    Fall();
+
                 //Change to stationary
-                if (!Input.GetButtonDown("Crouch"))
-                {
-                    currentMoveState = movementState.STATIONARY;
-                }
+                else if (Input.GetButtonDown("Crouch"))
+                    Stationary();
+
                 //Change to sneaking
-                else if (Input.GetAxis("Vertical") != 0 ||
-                    Input.GetAxis("Horizontal") != 0)
-                {
-                    currentMoveState = movementState.SNEAKING;
-                }
+                else if (Input.GetAxis("Vertical") != 0.0f ||
+                    Input.GetAxis("Horizontal") != 0.0f)
+                    Sneak();
                 break;
 
             case movementState.WALKING:
-                //Change to jump
-                if (Input.GetButtonDown("Jump"))
-                {
-                    currentMoveState = movementState.JUMPING;
-                }
-                //Change to sprinting
+                //Change to falling
+                if (!OnGround())
+                    Fall();
+
+                //Change to stationary
+                else if (Input.GetAxis("Vertical") == 0.0f &&
+                    Input.GetAxis("Horizontal") == 0.0f)
+                    Stationary();
+
+                //Change to running
                 else if (Input.GetButtonDown("Sprint"))
-                {
-                    currentMoveState = movementState.RUNNING;
-                }
-                //Change to sneaking
-                else if (Input.GetButtonDown("Crouch"))
-                {
-                    currentMoveState = movementState.SNEAKING;
-                }
+                    Run();
                 break;
 
             case movementState.SNEAKING:
-                //Change to walking
-                if (!Input.GetButtonDown("Crouch"))
-                {
-                    currentMoveState = movementState.WALKING;
-                }
+                //Change to falling
+                if (!OnGround())
+                    Fall();
+
+                //Change to stationary
+                else if (Input.GetAxis("Vertical") == 0.0f &&
+                    Input.GetAxis("Horizontal") == 0.0f)
+                    Crouch();
+
+                //Change to running
+                else if (Input.GetButtonDown("Crouch"))
+                    Walk();
                 break;
 
             case movementState.RUNNING:
+                //Change to falling
+                if (!OnGround())
+                    Fall();
+
                 //Change to walking
-                if (!Input.GetButtonDown("Sprint"))
-                {
-                    currentMoveState = movementState.WALKING;
-                }
+                else if (!Input.GetButton("Sprint"))
+                    Walk();
+
+                //Change to stationary
+                else if (Input.GetAxis("Vertical") == 0.0f &&
+                    Input.GetAxis("Horizontal") == 0.0f)
+                    Stationary();
+
                 //Change to jumping
                 else if (Input.GetButtonDown("Jump"))
-                {
-                    currentMoveState = movementState.JUMPING;
-                }
+                    Jump();
+
                 //Change to sliding
                 else if (Input.GetButtonDown("Crouch"))
-                {
-                    currentMoveState = movementState.SLIDING;
-                }
+                    Slide();
                 break;
 
             case movementState.JUMPING:
+                //Change to stationary
+                if (OnGround())
+                    Stationary();
+
+                //Change to falling
+                if (rb.velocity.y < 0.0f)
+                    Fall();
+                break;
+
+            case movementState.FALLING:
+                //Change to stationary
+                if (OnGround())
+                    Stationary();
+                break;
+
+            case movementState.VAULTING:
+                //Set to stationary after vaulting obsticle
+                if (currentVaultDuration <= 0.0f)
+                    Stationary();
+
+                //Still vaulting obsticle
+                else
+                    //Countdown vault duration
+                    currentVaultDuration -= Time.deltaTime;
                 break;
 
             case movementState.CLIMBING:
-                //Change to jumping
-                if (Input.GetButtonDown("Jump"))
-                {
-                    currentMoveState = movementState.JUMPING;
-                }
+                //Change to falling
+                if (!canClimb)
+                    Fall();
+
+                else if (canMantle &&
+                    Input.GetAxis("Vertical") > 0.0f)
+                    Mantle();
+                break;
+
+            case movementState.MANTLING:
+                //Set to stationary after mantling obsticle
+                if (currentMantleDuration <= 0.0f)
+                    Stationary();
+
+                //Countdown mantle duration
+                else
+                    currentMantleDuration -= Time.deltaTime;
                 break;
 
             case movementState.SLIDING:
+                //Set to stationary after sliding
+                if (currentSlideDuration <= 0.0f)
+                    Stationary();
+
+                //Still sliding
+                else
+                    //Countdown slide duration
+                    currentSlideDuration -= Time.deltaTime;
                 break;
 
             default:
@@ -147,39 +239,136 @@ public class Player_Script : MonoBehaviour {
         }
     }
 
-    // Move player
-    void playerMove(float horizontal, float vertical)
+    ////////////////////////////////////////////
+    //Set to stationary
+    ////////////////////////////////////////////
+    private void Stationary()
     {
-        switch (currentMoveState)
+        //Set to stationary if can stand
+        if (CanStand())
         {
-            case movementState.WALKING:
-                moveDirection.z = (vertical * walkSpeed * Time.deltaTime);
-                moveDirection.x = (horizontal * walkSpeed * Time.deltaTime);
-                break;
-
-            case movementState.SNEAKING:
-                moveDirection.z = (vertical * sneakSpeed * Time.deltaTime);
-                moveDirection.x = (horizontal * sneakSpeed * Time.deltaTime);
-                break;
-
-            case movementState.RUNNING:
-                moveDirection.z = (vertical * runSpeed * Time.deltaTime);
-                moveDirection.x = (horizontal * runSpeed * Time.deltaTime);
-                break;
-
-            case movementState.JUMPING:
-                break;
-
-            case movementState.CLIMBING:
-                moveDirection.y = (vertical * climbSpeed * Time.deltaTime);
-                moveDirection.x = (horizontal * climbSpeed * Time.deltaTime);
-                break;
-
-            case movementState.SLIDING:
-                break;
-
-            default:
-                break;
+            currentSpeed = walkSpeed;
+            currentMoveState = movementState.STATIONARY;
         }
+
+        //Crouch if cannot stand
+        else
+        {
+            currentSpeed = sneakSpeed;
+            Crouch();
+        }
+    }
+
+    ////////////////////////////////////////////
+    //Set to crouching
+    ////////////////////////////////////////////
+    private void Crouch()
+    {
+        currentSpeed = sneakSpeed;
+        currentMoveState = movementState.CROUCHING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to walking
+    ////////////////////////////////////////////
+    private void Walk()
+    {
+        currentSpeed = walkSpeed;
+        currentMoveState = movementState.WALKING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to sneaking
+    ////////////////////////////////////////////
+    private void Sneak()
+    {
+        currentSpeed = sneakSpeed;
+        currentMoveState = movementState.SNEAKING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to running
+    ////////////////////////////////////////////
+    private void Run()
+    {
+        currentSpeed = runSpeed;
+        currentMoveState = movementState.RUNNING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to jumping
+    ////////////////////////////////////////////
+    private void Jump()
+    {
+        rb.AddForce(0.0f, jumpSpeed, 0.0f);
+        currentMoveState = movementState.JUMPING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to falling
+    ////////////////////////////////////////////
+    private void Fall()
+    {
+        currentMoveState = movementState.FALLING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to vaulting
+    ////////////////////////////////////////////
+    private void Vault()
+    {
+        //Reset slide counter
+        currentVaultDuration = vaultDuration;
+
+        currentMoveState = movementState.VAULTING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to climbing
+    ////////////////////////////////////////////
+    private void Climb()
+    {
+        currentSpeed = climbSpeed;
+        currentMoveState = movementState.CLIMBING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to mantling
+    ////////////////////////////////////////////
+    private void Mantle()
+    {
+        //Reset mantle counter
+        currentMantleDuration = mantleDuration;
+
+        currentMoveState = movementState.MANTLING;
+    }
+
+    ////////////////////////////////////////////
+    //Set to sliding
+    ////////////////////////////////////////////
+    private void Slide()
+    {
+        currentSpeed = slideSpeed;
+
+        //Reset slide counter
+        currentSlideDuration = slideDuration;
+
+        currentMoveState = movementState.SLIDING;
+    }
+
+    ////////////////////////////////////////////
+    //Returns true if colliding with ground
+    ////////////////////////////////////////////
+    private bool OnGround()
+    {
+        return Physics.Raycast(transform.position, -Vector3.up, distFromYBoundary + 0.1f);
+    }
+
+    ////////////////////////////////////////////
+    //Returns true if space to stand up
+    ////////////////////////////////////////////
+    private bool CanStand()
+    {
+        return !Physics.Raycast(transform.position, Vector3.up, height - distFromYBoundary);
     }
 }
