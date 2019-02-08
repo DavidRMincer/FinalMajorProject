@@ -80,12 +80,13 @@ public class Player_Script : MonoBehaviour {
     {
         UpdateMoveState();
         Debug.Log(currentMoveState);
+        Debug.Log(rb.transform.forward);
     }
 
     ////////////////////////////////////////////
     //Update current movement state
     ////////////////////////////////////////////
-    private void UpdateMoveState()
+    public void UpdateMoveState()
     {
         switch (currentMoveState)
         {
@@ -237,6 +238,22 @@ public class Player_Script : MonoBehaviour {
             default:
                 break;
         }
+    }
+
+    ////////////////////////////////////////////
+    //Update current movement state
+    ////////////////////////////////////////////
+    public void Move()
+    {
+        if (currentMoveState == movementState.WALKING ||
+            currentMoveState == movementState.RUNNING ||
+            currentMoveState == movementState.SNEAKING ||
+            currentMoveState == movementState.JUMPING)
+            {
+                Vector3 velocity = (rb.transform.forward * currentSpeed) * Time.fixedDeltaTime;
+                velocity.y = rb.velocity.y;
+                rb.velocity = velocity;
+            }
     }
 
     ////////////////////////////////////////////
