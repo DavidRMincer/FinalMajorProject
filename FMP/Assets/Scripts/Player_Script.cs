@@ -34,6 +34,7 @@ public class Player_Script : MonoBehaviour {
                             canMantle;
     private Collider        playerCollider;
 
+    public Camera           playerCamera;
     public float            walkSpeed,
                             runSpeed,
                             jumpSpeed,
@@ -79,8 +80,9 @@ public class Player_Script : MonoBehaviour {
     private void FixedUpdate()
     {
         UpdateMoveState();
+        SetRotation();
+        Move();
         Debug.Log(currentMoveState);
-        Debug.Log(rb.transform.forward);
     }
 
     ////////////////////////////////////////////
@@ -248,12 +250,46 @@ public class Player_Script : MonoBehaviour {
         if (currentMoveState == movementState.WALKING ||
             currentMoveState == movementState.RUNNING ||
             currentMoveState == movementState.SNEAKING ||
-            currentMoveState == movementState.JUMPING)
-            {
-                Vector3 velocity = (rb.transform.forward * currentSpeed) * Time.fixedDeltaTime;
-                velocity.y = rb.velocity.y;
-                rb.velocity = velocity;
-            }
+            currentMoveState == movementState.JUMPING ||
+            currentMoveState == movementState.FALLING)
+        {
+            Vector3 velocity = (rb.transform.forward * currentSpeed) * Time.fixedDeltaTime;
+            velocity.y = rb.velocity.y;
+            rb.velocity = velocity;
+        }
+    }
+
+    ////////////////////////////////////////////
+    //Set to stationary
+    ////////////////////////////////////////////
+    private void SetRotation()
+    {
+        Debug.Log("SetRotation()");
+        //Set angle as player rotation
+        float angle = rb.transform.rotation.y;
+
+        Debug.Log(angle);
+
+        //While player is moving
+        if (currentMoveState == movementState.WALKING ||
+            currentMoveState == movementState.RUNNING ||
+            currentMoveState == movementState.SNEAKING ||
+            currentMoveState == movementState.JUMPING ||
+            currentMoveState == movementState.FALLING)
+        {
+            //Set rotation angle
+            angle = Mathf.Atan2(Input.GetAxis("Vertical"),
+                    Input.GetAxis("Horizontal")) * Mathf.Rad2Deg;
+            Debug.Log(angle);
+            angle += playerCamera.transform.rotation.y;
+        }
+
+        Debug.Log(angle);
+
+        rb.transform.rotation = new Quaternion(rb.transform.rotation.x,
+            angle,
+            rb.transform.rotation.z,
+            rb.transform.rotation.w);
     }
 
     ////////////////////////////////////////////
