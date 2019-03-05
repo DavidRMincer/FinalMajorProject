@@ -450,15 +450,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5430820ad68e12489b26aa0f4f51870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCamera: {fileID: 282840813}
-  walkSpeed: 200
-  runSpeed: 400
-  jumpSpeed: 600
-  slideSpeed: 0
-  climbSpeed: 0
-  gravity: 0
-  terminalVelocity: 0
-  sneakSpeed: 0
-  vaultDuration: 1
-  mantleDuration: 1
-  slideDuration: 1
+  walkSpeed: 100
+  jumpForce: 0
