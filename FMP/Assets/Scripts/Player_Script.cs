@@ -24,8 +24,9 @@ public class Player_Script : MonoBehaviour
 
     private void FixedUpdate()
     {
-        //Debug.Log(CanJump());
         Move();
+        Jump();
+        Debug.Log(rb.velocity.y / Time.fixedDeltaTime);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -47,15 +48,32 @@ public class Player_Script : MonoBehaviour
             Input.GetAxis("Vertical") != 0.0f)
         {
             // Set current speed to walk speed
-            currentSpeed = walkSpeed * Time.deltaTime;
-            Debug.Log(currentSpeed);
+            currentSpeed = walkSpeed * Time.fixedDeltaTime;
 
             // Apply velocity
             Vector3 newVelocity = new Vector3(  Input.GetAxis("Horizontal") * currentSpeed,
                                                 rb.velocity.y,
                                                 Input.GetAxis("Vertical") * currentSpeed);
             rb.velocity = newVelocity;
-            Debug.Log(rb.velocity);
+        }
+        // If player is stationary
+        else
+        {
+            currentSpeed = 0.0f;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Applies upward force
+    /////////////////////////////////////////////////////////////////
+    public void Jump()
+    {
+        // If jump inputted and player grounded
+        if (Input.GetButtonDown("Jump") &&
+            CanJump())
+        {
+            // Apply upward jump force
+            rb.AddForce(Vector3.up * jumpForce);
         }
     }
 }
