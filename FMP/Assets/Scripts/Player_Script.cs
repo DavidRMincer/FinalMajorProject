@@ -24,9 +24,9 @@ public class Player_Script : MonoBehaviour
 
     private void FixedUpdate()
     {
-        Move();
+        
         Jump();
-        Debug.Log(rb.velocity.y / Time.fixedDeltaTime);
+        Debug.Log(rb.velocity.x / Time.fixedDeltaTime);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -39,28 +39,37 @@ public class Player_Script : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
-    // Moves gameobject
+    // Takes player input
     /////////////////////////////////////////////////////////////////
-    public void Move()
+    public void PlayerInput()
     {
         // If player inputs movement
         if (Input.GetAxis("Horizontal") != 0.0f ||
-            Input.GetAxis("Vertical") != 0.0f)
+                Input.GetAxis("Vertical") != 0.0f)
         {
-            // Set current speed to walk speed
-            currentSpeed = walkSpeed * Time.fixedDeltaTime;
+            // Pass input axis into move function
+            Move(Input.GetAxis("Horizontal"),
+                Input.GetAxis("Vertical"));
+        }
+        // Current speed is 0 when no movement is inputted
+        else currentSpeed = 0.0f;
+    }
 
-            // Apply velocity
-            Vector3 newVelocity = new Vector3(  Input.GetAxis("Horizontal") * currentSpeed,
-                                                rb.velocity.y,
-                                                Input.GetAxis("Vertical") * currentSpeed);
-            rb.velocity = newVelocity;
-        }
-        // If player is stationary
-        else
-        {
-            currentSpeed = 0.0f;
-        }
+    /////////////////////////////////////////////////////////////////
+    // Moves gameobject
+    /////////////////////////////////////////////////////////////////
+    public void Move(   float x,
+                        float y)
+    {
+        // Set current speed to walk speed
+        currentSpeed = walkSpeed * Time.fixedDeltaTime;
+
+        // Calculate velocity
+        Vector3 newVelocity = new Vector3(Input.GetAxis("Horizontal") * currentSpeed,
+                                            rb.velocity.y,
+                                            Input.GetAxis("Vertical") * currentSpeed);
+        // Apply velocity
+        rb.velocity = newVelocity;
     }
 
     /////////////////////////////////////////////////////////////////
