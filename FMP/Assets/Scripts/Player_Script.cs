@@ -5,12 +5,19 @@ using UnityEngine;
 public class Player_Script : MonoBehaviour
 {
     private float       currentSpeed,
-                        distToGround;
+                        distToGround,
+                        currentXCam,
+                        currentYCam;
     private Rigidbody   rb;
     private Collider    collider;
 
     public float        walkSpeed,
-                        jumpForce;
+                        jumpForce,
+                        cameraDistance,
+                        cameraSpeed,
+                        minimumCameraAngle,
+                        maximumCameraAngle;
+    public Camera       camera;
 
     /////////////////////////////////////////////////////////////////
     // Sets private variables on start up
@@ -20,13 +27,17 @@ public class Player_Script : MonoBehaviour
         rb = gameObject.GetComponent<Rigidbody>();
         collider = gameObject.GetComponent<Collider>();
         distToGround = collider.bounds.extents.y + 0.1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
+    /////////////////////////////////////////////////////////////////
+    // Updates more than FPS
+    /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        
+        PlayerInput();
         Jump();
-        Debug.Log(rb.velocity.x / Time.fixedDeltaTime);
     }
 
     /////////////////////////////////////////////////////////////////
@@ -43,8 +54,19 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     public void PlayerInput()
     {
-        // If player inputs movement
-        if (Input.GetAxis("Horizontal") != 0.0f ||
+        // CAMERA
+
+        if (    Input.GetAxis("Mouse X") != 0.0f ||
+                Input.GetAxis("Mouse Y") != 0.0f)
+        {
+            MoveCamera( Input.GetAxis("Mouse X"),
+                        Input.GetAxis("Mouse Y"));
+        }
+
+            // MOVEMENT
+
+            // If player inputs movement
+            if (Input.GetAxis("Horizontal") != 0.0f ||
                 Input.GetAxis("Vertical") != 0.0f)
         {
             // Pass input axis into move function
@@ -56,20 +78,68 @@ public class Player_Script : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
+    // Updates each frame
+    /////////////////////////////////////////////////////////////////
+    public void LateUpdate()
+    {
+        // Update camera
+        UpdateCamera();
+    }
+
+    /////////////////////////////////////////////////////////////////
     // Moves gameobject
     /////////////////////////////////////////////////////////////////
     public void Move(   float x,
-                        float y)
+                        float z)
     {
         // Set current speed to walk speed
         currentSpeed = walkSpeed * Time.fixedDeltaTime;
 
         // Calculate velocity
-        Vector3 newVelocity = new Vector3(Input.GetAxis("Horizontal") * currentSpeed,
+        Vector3 newVelocity = new Vector3(  x * currentSpeed,
                                             rb.velocity.y,
-                                            Input.GetAxis("Vertical") * currentSpeed);
+                                            z * currentSpeed);
+
+        // Rotate new velocity by camera y angle
+        newVelocity = Quaternion.AngleAxis(camera.transform.rotation.y, Vector3.up) * newVelocity;
+
         // Apply velocity
         rb.velocity = newVelocity;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Moves camera
+    /////////////////////////////////////////////////////////////////
+    public void MoveCamera(     float x,
+                                float y)
+    {
+        // Move camera
+        currentXCam += (x * cameraSpeed * Time.deltaTime);
+        currentYCam += (y * cameraSpeed * Time.deltaTime);
+
+        Debug.Log(currentYCam);
+
+        // Keep y angle with minimum and maximum ranges
+        if (currentYCam < maximumCameraAngle)
+            currentYCam = maximumCameraAngle;
+        else if (currentYCam > minimumCameraAngle)
+            currentYCam = minimumCameraAngle;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Updates camera rotation
+    /////////////////////////////////////////////////////////////////
+    public void UpdateCamera()
+    {
+        // Calculate camera position
+        Vector3 distVec = new Vector3(0, 0, cameraDistance);
+        Quaternion camRotation = Quaternion.Euler(currentYCam, currentXCam, 0);
+
+        // Apply new camera position
+        camera.transform.position = gameObject.transform.position - camRotation * distVec;
+
+        // Rotate towards player
+        camera.transform.LookAt(gameObject.transform.position);
     }
 
     /////////////////////////////////////////////////////////////////

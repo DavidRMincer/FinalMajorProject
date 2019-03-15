@@ -450,5 +450,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5430820ad68e12489b26aa0f4f51870, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  walkSpeed: 100
+  walkSpeed: 300
   jumpForce: 400
+  cameraDistance: 10
+  cameraSpeed: 100
+  minimumCameraAngle: 60
+  maximumCameraAngle: -40
+  camera: {fileID: 282840813}
