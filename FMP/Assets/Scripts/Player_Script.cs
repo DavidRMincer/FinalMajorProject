@@ -84,6 +84,8 @@ public class Player_Script : MonoBehaviour
     {
         // Update camera
         UpdateCamera();
+
+        Debug.Log(Input.GetAxis("Mouse X"));
     }
 
     /////////////////////////////////////////////////////////////////
@@ -95,13 +97,17 @@ public class Player_Script : MonoBehaviour
         // Set current speed to walk speed
         currentSpeed = walkSpeed * Time.fixedDeltaTime;
 
-        // Calculate velocity
-        Vector3 newVelocity = new Vector3(  x * currentSpeed,
-                                            rb.velocity.y,
-                                            z * currentSpeed);
+        // Calculate new rotation
+        float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
+        angle += Mathf.Atan2(   transform.position.x - camera.transform.position.x,
+                                transform.position.z - camera.transform.position.z) * Mathf.Rad2Deg;
 
-        // Rotate new velocity by camera y angle
-        newVelocity = Quaternion.AngleAxis(camera.transform.rotation.y, Vector3.up) * newVelocity;
+        // Apply rotation
+        transform.rotation = Quaternion.Euler(Vector3.up * angle);
+
+        // Calculate velocity
+        Vector3 newVelocity = transform.forward * currentSpeed;
+        newVelocity.y = rb.velocity.y;
 
         // Apply velocity
         rb.velocity = newVelocity;
@@ -116,8 +122,6 @@ public class Player_Script : MonoBehaviour
         // Move camera
         currentXCam += (x * cameraSpeed * Time.deltaTime);
         currentYCam += (y * cameraSpeed * Time.deltaTime);
-
-        Debug.Log(currentYCam);
 
         // Keep y angle with minimum and maximum ranges
         if (currentYCam < maximumCameraAngle)
@@ -140,6 +144,22 @@ public class Player_Script : MonoBehaviour
 
         // Rotate towards player
         camera.transform.LookAt(gameObject.transform.position);
+        
+        // OBSTRUCTION DETECTION
+
+        RaycastHit hit;
+        // Calculate ray direction
+        Vector3 direction = Camera.main.transform.position - transform.position;
+
+        // If ray hits an obstruction
+        if (Physics.Raycast(transform.position, direction, out hit))
+        {
+            if (hit.collider.tag != "MainCamera")
+            {
+                // Move camera to point of obstruction
+                camera.transform.position = hit.point;
+            }
+        }
     }
 
     /////////////////////////////////////////////////////////////////

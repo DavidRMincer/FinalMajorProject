@@ -454,6 +454,6 @@ MonoBehaviour:
   jumpForce: 400
   cameraDistance: 10
   cameraSpeed: 100
-  minimumCameraAngle: 60
+  minimumCameraAngle: 50
   maximumCameraAngle: -40
   camera: {fileID: 282840813}
