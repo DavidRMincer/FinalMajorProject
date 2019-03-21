@@ -4,20 +4,23 @@ using UnityEngine;
 
 public class Player_Script : MonoBehaviour
 {
-    private float       currentSpeed,
-                        distToGround,
-                        currentXCam,
-                        currentYCam;
-    private Rigidbody   rb;
-    private Collider    collider;
+    private float               currentSpeed,
+                                distToGround,
+                                currentXCam,
+                                currentYCam;
+    private Rigidbody           rb;
+    private Obstacle_Detector   obstacleDetector;
 
-    public float        walkSpeed,
-                        jumpForce,
-                        cameraDistance,
-                        cameraSpeed,
-                        minimumCameraAngle,
-                        maximumCameraAngle;
-    public Camera       camera;
+    internal Collider           collider;
+
+    public float                walkSpeed,
+                                jumpForce,
+                                cameraDistance,
+                                cameraSpeed,
+                                minimumCameraAngle,
+                                maximumCameraAngle;
+    public Camera               camera;
+    public GameObject           oDBox;
 
     /////////////////////////////////////////////////////////////////
     // Sets private variables on start up
@@ -43,7 +46,7 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     // Returns true if grounded
     /////////////////////////////////////////////////////////////////
-    public bool CanJump()
+    private bool CanJump()
     {
         // Returns true if raycast collides with ground
         return Physics.Raycast(transform.position, -Vector3.up, distToGround);
