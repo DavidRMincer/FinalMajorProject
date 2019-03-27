@@ -123,7 +123,7 @@ public class Player_Script : MonoBehaviour
     {
         // Move camera
         currentXCam += (x * cameraSpeed * Time.deltaTime);
-        currentYCam += (y * cameraSpeed * Time.deltaTime);
+        currentYCam += -(y * cameraSpeed * Time.deltaTime);
 
         // Keep y angle with minimum and maximum ranges
         if (currentYCam < maximumCameraAngle)
