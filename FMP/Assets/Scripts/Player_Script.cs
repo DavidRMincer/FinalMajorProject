@@ -9,7 +9,6 @@ public class Player_Script : MonoBehaviour
                                 currentXCam,
                                 currentYCam;
     private Rigidbody           rb;
-    private Obstacle_Detector   obstacleDetector;
 
     internal Collider           collider;
 
@@ -20,7 +19,7 @@ public class Player_Script : MonoBehaviour
                                 minimumCameraAngle,
                                 maximumCameraAngle;
     public Camera               camera;
-    public GameObject           oDBox;
+    public Obstacle_Detector    obstacleDetector;
 
     /////////////////////////////////////////////////////////////////
     // Sets private variables on start up
@@ -30,6 +29,8 @@ public class Player_Script : MonoBehaviour
         rb = gameObject.GetComponent<Rigidbody>();
         collider = gameObject.GetComponent<Collider>();
         distToGround = collider.bounds.extents.y + 0.1f;
+
+        obstacleDetector.SetDimensions(GetComponent<Player_Script>());
 
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -87,8 +88,6 @@ public class Player_Script : MonoBehaviour
     {
         // Update camera
         UpdateCamera();
-
-        Debug.Log(Input.GetAxis("Mouse X"));
     }
 
     /////////////////////////////////////////////////////////////////
