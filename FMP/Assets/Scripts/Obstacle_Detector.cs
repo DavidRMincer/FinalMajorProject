@@ -143,14 +143,27 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     public bool CanVault()
     {
-        Vector3     topEdge = GetHitPoint();
-        RaycastHit  vaultRay;
-        float       height,
-                    space,
-                    depth;
-        
+        Vector3         topEdge = GetHitPoint();
+        RaycastHit      vaultRay;
+        float           height = obstacle.GetComponent<Collider>().bounds.size.y,
+                        space,
+                        depth;
+        RaycastHit[]    hits;
+
+        // Set top edge vector
+        ++height;
+        hits = Physics.RaycastAll(topEdge + (Vector3.up * height), -Vector3.up, height + detectorLength);
+
+        for (int i = 0; i < hits.Length; ++i)
+        {
+            if (hits[i].collider.gameObject == obstacle)
+            {
+                topEdge.y = hits[i].point.y;
+                i = hits.Length;
+            }
+        }
+
         // Get height of top of obstacle from ground
-        topEdge.y += (obstacle.transform.position.y - topEdge.y) + obstacle.GetComponent<Collider>().bounds.extents.y;
         Physics.Raycast(topEdge, -Vector3.up, out vaultRay);
         height = vaultRay.distance;
         Debug.DrawRay(topEdge, -Vector3.up * vaultRay.distance, vaultDebugColour, 0.01f);
@@ -163,7 +176,7 @@ public class Obstacle_Detector : MonoBehaviour
 
         ++depth;
 
-        RaycastHit[] hits = Physics.RaycastAll( GetHitPoint() + (transform.forward * depth),
+        hits = Physics.RaycastAll( GetHitPoint() + (transform.forward * depth),
                                                 -transform.forward,
                                                 depth);
 
@@ -185,6 +198,8 @@ public class Obstacle_Detector : MonoBehaviour
             space = jumpHeight;
         else
             space = vaultRay.distance;
+
+        Debug.DrawRay(topEdge + (transform.forward * depth / 2), Vector3.up * space, vaultDebugColour, 0.01f);
 
         // Can vault
         if (height <= crouchingHeight &&
