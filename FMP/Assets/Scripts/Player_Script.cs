@@ -19,7 +19,6 @@ public class Player_Script : MonoBehaviour
                                 minimumCameraAngle,
                                 maximumCameraAngle;
     public Camera               camera;
-    public Obstacle_Detector    obstacleDetector;
 
     /////////////////////////////////////////////////////////////////
     // Sets private variables on start up
@@ -29,8 +28,6 @@ public class Player_Script : MonoBehaviour
         rb = gameObject.GetComponent<Rigidbody>();
         collider = gameObject.GetComponent<Collider>();
         distToGround = collider.bounds.extents.y + 0.1f;
-
-        obstacleDetector.SetDimensions(GetComponent<Player_Script>());
 
         Cursor.lockState = CursorLockMode.Locked;
     }
@@ -149,17 +146,21 @@ public class Player_Script : MonoBehaviour
         
         // OBSTRUCTION DETECTION
 
-        RaycastHit hit;
         // Calculate ray direction
         Vector3 direction = Camera.main.transform.position - transform.position;
 
+        // Raycast from player to camera
+        RaycastHit[] hits = Physics.RaycastAll(transform.position, direction);
+
         // If ray hits an obstruction
-        if (Physics.Raycast(transform.position, direction, out hit))
+        for (int i = 0; i < hits.Length; i++)
         {
-            if (hit.collider.tag != "MainCamera")
+            if (hits[i].collider.tag != "MainCamera" &&
+                hits[i].collider.tag != "Player")
             {
                 // Move camera to point of obstruction
-                camera.transform.position = hit.point;
+                camera.transform.position = hits[i].point;
+                i = hits.Length;
             }
         }
     }

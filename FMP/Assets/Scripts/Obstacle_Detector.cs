@@ -13,13 +13,12 @@ public class Obstacle_Detector : MonoBehaviour
                         crouchingHeight,
                         jumpHeight,
                         playerWidth;
-    private RaycastHit  topHit,
-                        midHit,
-                        botHit,
-                        upperHit;
+    private RaycastHit  mainRay;
     private GameObject  obstacle;
     private rayHit      currentRayHit;
+    private Vector3     hitPoint;
 
+    public GameObject   playerObject;
     public float        detectorLength;
     public Color        debugColour,
                         slideDebugColour,
@@ -27,58 +26,48 @@ public class Obstacle_Detector : MonoBehaviour
                         mantleDebugColour,
                         climbDebugColour;
 
-    private void FixedUpdate()
+    private void Start()
     {
-        //// DETECT OBSTACLE IN FRONT
+        SetDimensions();
+    }
 
-        Vector3 top = transform.position + (Vector3.up * standingHeight / 2),
-                bot = transform.position - (Vector3.up * standingHeight / 2),
-                upper = top + (transform.forward * detectorLength) + (Vector3.up * standingHeight);
-
-        // Raycast forwards from mid body
-        Physics.Raycast(transform.position, transform.forward, out midHit);
-        Debug.DrawRay(transform.position, transform.forward * detectorLength, debugColour, 0.01f);
-
-        // Raycast forwards from head
-        Physics.Raycast(top, transform.forward, out topHit);
-        Debug.DrawRay(top, transform.forward * detectorLength, debugColour, 0.01f);
-
-        // Raycast forwards from feet
-        Physics.Raycast(bot, transform.forward, out botHit);
-        Debug.DrawRay(bot, transform.forward * detectorLength, debugColour, 0.01f);
-
-        // Raycast forwards and up from head
-        Physics.Raycast(top, upper - top, out upperHit);
-        Debug.DrawRay(top, upper - top, debugColour, 0.01f);
-        
-        //// ON IMPACT
-
-        if (HitObstacle())
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.tag != "Player" &&
+            other.tag != "MainCamera")
         {
-            // Checks if player can slide underneath
-            CanSlide();
-            // Checks if player can vault over
-            Debug.Log(CanVault());
-            // Checks if player can mantle onto
-            CanMantle();
-            // Checks if player can climb up
-            CanClimb();
+            obstacle = other.gameObject;
+            RaycastHit[] hits = Physics.RaycastAll( playerObject.transform.position,
+                                                    (obstacle.transform.position - playerObject.transform.position).normalized,
+                                                    detectorLength);
+            for (int i = 0; i < hits.Length; ++i)
+            {
+                if (hits[i].collider.gameObject == obstacle)
+                {
+                    hitPoint = hits[i].point;
+                    Debug.DrawRay(playerObject.transform.position, hitPoint - playerObject.transform.position, debugColour, 0.016f);
+                    i = hits.Length;
+                }
+            }
         }
     }
 
     /////////////////////////////////////////////////////////////////
-    // Sets dimensions from player dimensions
+    // Sets dimensions from player and detector box dimensions
     /////////////////////////////////////////////////////////////////
-    public void SetDimensions(Player_Script player)
+    private void SetDimensions()
     {
         // Set standing height as player height
-        standingHeight = player.collider.bounds.size.y;
+        standingHeight = playerObject.GetComponent<Collider>().bounds.size.y;
         // Set crouching height as half player height
         crouchingHeight = standingHeight / 2;
         // Set player width as player width
-        playerWidth = player.collider.bounds.size.z;
+        playerWidth = playerObject.GetComponent<Collider>().bounds.size.z;
         // Set jump height
         jumpHeight = standingHeight * 2;
+
+        // Set detector length
+        detectorLength = GetComponent<Collider>().bounds.size.z;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -86,56 +75,60 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private bool HitObstacle()
     {
-        currentRayHit = rayHit.NONE;
+        //currentRayHit = rayHit.NONE;
 
-        // Middle raycast hits
-        if (midHit.collider != null && midHit.distance <= detectorLength && midHit.distance != 0.0f)
-        {
-            obstacle = midHit.collider.gameObject;
-            currentRayHit = rayHit.MID;
-            return true;
-        }
-        // Bottom raycast hits
-        else if (botHit.collider != null && botHit.distance <= detectorLength && botHit.distance != 0.0f)
-        {
-            obstacle = botHit.collider.gameObject;
-            currentRayHit = rayHit.BOT;
-            return true;
-        }
-        // Top raycast hits
-        else if (topHit.collider != null && topHit.distance <= detectorLength && topHit.distance != 0.0f)
-        {
-            obstacle = topHit.collider.gameObject;
-            currentRayHit = rayHit.TOP;
-            return true;
-        }
-        // Upper raycast hits
-        else if (upperHit.collider != null && upperHit.distance <= detectorLength && upperHit.distance != 0.0f)
-        {
-            obstacle = upperHit.collider.gameObject;
-            currentRayHit = rayHit.UPPER;
-            return true;
-        }
+        //// Middle raycast hits
+        //if (midHit.collider != null && midHit.distance <= detectorLength && midHit.distance != 0.0f)
+        //{
+        //    obstacle = midHit.collider.gameObject;
+        //    currentRayHit = rayHit.MID;
+        //    return true;
+        //}
+        //// Bottom raycast hits
+        //else if (botHit.collider != null && botHit.distance <= detectorLength && botHit.distance != 0.0f)
+        //{
+        //    obstacle = botHit.collider.gameObject;
+        //    currentRayHit = rayHit.BOT;
+        //    return true;
+        //}
+        //// Top raycast hits
+        //else if (topHit.collider != null && topHit.distance <= detectorLength && topHit.distance != 0.0f)
+        //{
+        //    obstacle = topHit.collider.gameObject;
+        //    currentRayHit = rayHit.TOP;
+        //    return true;
+        //}
+        //// Upper raycast hits
+        //else if (upperHit.collider != null && upperHit.distance <= detectorLength && upperHit.distance != 0.0f)
+        //{
+        //    obstacle = upperHit.collider.gameObject;
+        //    currentRayHit = rayHit.UPPER;
+        //    return true;
+        //}
 
         return false;
     }
 
+    /////////////////////////////////////////////////////////////////
+    // Returns position of point where 
+    /////////////////////////////////////////////////////////////////
     private Vector3 GetHitPoint()
     {
         // return hit point from the raycast that hit obstacle
-        switch (currentRayHit)
-        {
-            case rayHit.BOT:
-                return botHit.point;
-            case rayHit.MID:
-                return midHit.point;
-            case rayHit.TOP:
-                return topHit.point;
-            case rayHit.UPPER:
-                return upperHit.point;
-            default:
-                return obstacle.transform.position;
-        }
+        //switch (currentRayHit)
+        //{
+        //    case rayHit.BOT:
+        //        return botHit.point;
+        //    case rayHit.MID:
+        //        return midHit.point;
+        //    case rayHit.TOP:
+        //        return topHit.point;
+        //    case rayHit.UPPER:
+        //        return upperHit.point;
+        //    default:
+        //        return obstacle.transform.position;
+        //}
+        return Vector3.zero;
     }
 
     /////////////////////////////////////////////////////////////////
