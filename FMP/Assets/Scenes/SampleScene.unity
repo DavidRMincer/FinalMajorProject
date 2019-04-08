@@ -330,7 +330,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 770211283}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.51, y: 2.41, z: 2.13}
+  m_LocalPosition: {x: -2.99, y: 2.41, z: 2.99}
   m_LocalScale: {x: 9.775271, y: 0.43385863, z: 0.15928625}
   m_Children: []
   m_Father: {fileID: 0}
@@ -436,10 +436,6 @@ MonoBehaviour:
   playerObject: {fileID: 1801999034}
   detectorLength: 10
   debugColour: {r: 1, g: 0.96754205, b: 0, a: 1}
-  slideDebugColour: {r: 1, g: 0, b: 0, a: 1}
-  vaultDebugColour: {r: 0, g: 0.94636536, b: 1, a: 1}
-  mantleDebugColour: {r: 0.6774559, g: 0, b: 1, a: 1}
-  climbDebugColour: {r: 0.0025007725, g: 1, b: 0, a: 1}
 --- !u!1 &1772887920
 GameObject:
   m_ObjectHideFlags: 0
@@ -538,6 +534,7 @@ GameObject:
   - component: {fileID: 1801999036}
   - component: {fileID: 1801999035}
   - component: {fileID: 1801999040}
+  - component: {fileID: 1801999041}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -641,12 +638,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 300
+  runSpeed: 0
+  sneakSpeed: 0
   jumpForce: 400
-  cameraDistance: 10
-  cameraSpeed: 100
-  minimumCameraAngle: 50
-  maximumCameraAngle: -40
+  vaultDuration: 0
+  slideDuration: 0
+  mantleDuration: 0
   camera: {fileID: 282840813}
+--- !u!114 &1801999041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1801999034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e81be0db8833d134a90ce0f516c7822e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cameraDistance: 10
+  cameraSpeed: 50
+  minimumCameraAngle: 40
+  maximumCameraAngle: -60
 --- !u!1 &1927440645
 GameObject:
   m_ObjectHideFlags: 0

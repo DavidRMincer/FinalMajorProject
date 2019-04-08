@@ -301,6 +301,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Obstacle_Detector.cs" />
+    <Compile Include="Assets\Scripts\Player_Controller.cs" />
     <Compile Include="Assets\Scripts\Player_Script.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -4,41 +4,57 @@ using UnityEngine;
 
 public class Player_Script : MonoBehaviour
 {
+    public enum MovementState
+    {
+        STANDING, CROUCHING, SNEAKING, WALKING, RUNNING, JUMPING,
+        FALLING, VAULTING, SLIDING, MANTLING, CLIMBING
+    };
+
+    public enum StatePhase
+    {
+        START, MIDDLE, END
+    };
+
     private float               currentSpeed,
                                 distToGround,
-                                currentXCam,
-                                currentYCam;
+                                crouchHeight,
+                                jumpHeight;
     private Rigidbody           rb;
+    private MovementState       currentMoveState;
+    private StatePhase          currentStatePhase;
 
-    internal Collider           collider;
+    internal CapsuleCollider    collider;
 
     public float                walkSpeed,
+                                runSpeed,
+                                sneakSpeed,
                                 jumpForce,
-                                cameraDistance,
-                                cameraSpeed,
-                                minimumCameraAngle,
-                                maximumCameraAngle;
+                                vaultDuration,
+                                slideDuration,
+                                mantleDuration;
     public Camera               camera;
 
     /////////////////////////////////////////////////////////////////
-    // Sets private variables on start up
+    // Runs on start up
     /////////////////////////////////////////////////////////////////
     private void Start()
     {
+        // Set objects
         rb = gameObject.GetComponent<Rigidbody>();
-        collider = gameObject.GetComponent<Collider>();
-        distToGround = collider.bounds.extents.y + 0.1f;
+        collider = gameObject.GetComponent<CapsuleCollider>();
 
-        Cursor.lockState = CursorLockMode.Locked;
+        // Set dimensions
+        crouchHeight = collider.height / 2;
+        jumpHeight = collider.height * 2;
+        distToGround = crouchHeight + 0.1f;
     }
 
     /////////////////////////////////////////////////////////////////
-    // Updates more than FPS
+    // Updates gameplay and physics
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        PlayerInput();
-        Jump();
+        
     }
 
     /////////////////////////////////////////////////////////////////
@@ -49,49 +65,11 @@ public class Player_Script : MonoBehaviour
         // Returns true if raycast collides with ground
         return Physics.Raycast(transform.position, -Vector3.up, distToGround);
     }
-
-    /////////////////////////////////////////////////////////////////
-    // Takes player input
-    /////////////////////////////////////////////////////////////////
-    public void PlayerInput()
-    {
-        // CAMERA
-
-        if (    Input.GetAxis("Mouse X") != 0.0f ||
-                Input.GetAxis("Mouse Y") != 0.0f)
-        {
-            MoveCamera( Input.GetAxis("Mouse X"),
-                        Input.GetAxis("Mouse Y"));
-        }
-
-            // MOVEMENT
-
-            // If player inputs movement
-            if (Input.GetAxis("Horizontal") != 0.0f ||
-                Input.GetAxis("Vertical") != 0.0f)
-        {
-            // Pass input axis into move function
-            Move(Input.GetAxis("Horizontal"),
-                Input.GetAxis("Vertical"));
-        }
-        // Current speed is 0 when no movement is inputted
-        else currentSpeed = 0.0f;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Updates each frame
-    /////////////////////////////////////////////////////////////////
-    public void LateUpdate()
-    {
-        // Update camera
-        UpdateCamera();
-    }
-
+    
     /////////////////////////////////////////////////////////////////
     // Moves gameobject
     /////////////////////////////////////////////////////////////////
-    public void Move(   float x,
-                        float z)
+    public void Move(float x, float z)
     {
         // Set current speed to walk speed
         currentSpeed = walkSpeed * Time.fixedDeltaTime;
@@ -113,69 +91,42 @@ public class Player_Script : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
-    // Moves camera
-    /////////////////////////////////////////////////////////////////
-    public void MoveCamera(     float x,
-                                float y)
-    {
-        // Move camera
-        currentXCam += (x * cameraSpeed * Time.deltaTime);
-        currentYCam += -(y * cameraSpeed * Time.deltaTime);
-
-        // Keep y angle with minimum and maximum ranges
-        if (currentYCam < maximumCameraAngle)
-            currentYCam = maximumCameraAngle;
-        else if (currentYCam > minimumCameraAngle)
-            currentYCam = minimumCameraAngle;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Updates camera rotation
-    /////////////////////////////////////////////////////////////////
-    public void UpdateCamera()
-    {
-        // Calculate camera position
-        Vector3 distVec = new Vector3(0, 0, cameraDistance);
-        Quaternion camRotation = Quaternion.Euler(currentYCam, currentXCam, 0);
-
-        // Apply new camera position
-        camera.transform.position = gameObject.transform.position - camRotation * distVec;
-
-        // Rotate towards player
-        camera.transform.LookAt(gameObject.transform.position);
-        
-        // OBSTRUCTION DETECTION
-
-        // Calculate ray direction
-        Vector3 direction = Camera.main.transform.position - transform.position;
-
-        // Raycast from player to camera
-        RaycastHit[] hits = Physics.RaycastAll(transform.position, direction);
-
-        // If ray hits an obstruction
-        for (int i = 0; i < hits.Length; i++)
-        {
-            if (hits[i].collider.tag != "MainCamera" &&
-                hits[i].collider.tag != "Player")
-            {
-                // Move camera to point of obstruction
-                camera.transform.position = hits[i].point;
-                i = hits.Length;
-            }
-        }
-    }
-
-    /////////////////////////////////////////////////////////////////
     // Applies upward force
     /////////////////////////////////////////////////////////////////
     public void Jump()
     {
         // If jump inputted and player grounded
-        if (Input.GetButtonDown("Jump") &&
-            CanJump())
+        if (CanJump())
         {
             // Apply upward jump force
             rb.AddForce(Vector3.up * jumpForce);
         }
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets movement state
+    /////////////////////////////////////////////////////////////////
+    public void SetMovementState(MovementState state)
+    {
+        // Set movement state as state
+        currentMoveState = state;
+        // Set current state to start
+        currentStatePhase = StatePhase.START;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns current move state
+    /////////////////////////////////////////////////////////////////
+    public MovementState GetMovementState()
+    {
+        return currentMoveState;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns current state phase
+    /////////////////////////////////////////////////////////////////
+    public StatePhase GetStatePhase()
+    {
+        return currentStatePhase;
     }
 }

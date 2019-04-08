@@ -4,27 +4,21 @@ using UnityEngine;
 
 public class Obstacle_Detector : MonoBehaviour
 {
-    private enum        rayHit
-    {
-        NONE, BOT, MID, TOP, UPPER
-    };
+    private float           standingHeight,
+                            crouchingHeight,
+                            jumpHeight,
+                            playerWidth;
+    private RaycastHit[]    mainRay;
+    private GameObject      obstacle;
+    private Vector3         hitPoint;
+    private bool            canSlide,
+                            canVault,
+                            canMantle,
+                            canClimb;
 
-    private float       standingHeight,
-                        crouchingHeight,
-                        jumpHeight,
-                        playerWidth;
-    private RaycastHit  mainRay;
-    private GameObject  obstacle;
-    private rayHit      currentRayHit;
-    private Vector3     hitPoint;
-
-    public GameObject   playerObject;
-    public float        detectorLength;
-    public Color        debugColour,
-                        slideDebugColour,
-                        vaultDebugColour,
-                        mantleDebugColour,
-                        climbDebugColour;
+    public GameObject       playerObject;
+    public float            detectorLength;
+    public Color            debugColour;
 
     private void Start()
     {
@@ -36,22 +30,26 @@ public class Obstacle_Detector : MonoBehaviour
         if (other.tag != "Player" &&
             other.tag != "MainCamera")
         {
-            obstacle = other.gameObject;
-            RaycastHit[] hits = Physics.RaycastAll( playerObject.transform.position,
-                                                    (obstacle.transform.position - playerObject.transform.position).normalized,
+            // Set hit point
+            hitPoint = other.ClosestPoint(playerObject.transform.position);
+
+            mainRay = Physics.RaycastAll( playerObject.transform.position,
+                                                    (hitPoint - playerObject.transform.position).normalized,
                                                     detectorLength);
-            for (int i = 0; i < hits.Length; ++i)
+
+            if (GetFirstHit(mainRay).collider == other)
             {
-                if (hits[i].collider.gameObject == obstacle)
-                {
-                    hitPoint = hits[i].point;
-                    Debug.DrawRay(playerObject.transform.position, hitPoint - playerObject.transform.position, debugColour, 0.016f);
-                    i = hits.Length;
-                }
+                obstacle = other.gameObject;
+                Debug.DrawRay(playerObject.transform.position,
+                                hitPoint - playerObject.transform.position,
+                                debugColour,
+                                0.016f);
+                
+                ObstacleCheck(obstacle);
             }
         }
     }
-
+    
     /////////////////////////////////////////////////////////////////
     // Sets dimensions from player and detector box dimensions
     /////////////////////////////////////////////////////////////////
@@ -71,183 +69,208 @@ public class Obstacle_Detector : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns true if a ray hits an obstacle
+    // Returns first collider hit by main ray
     /////////////////////////////////////////////////////////////////
-    private bool HitObstacle()
+    private RaycastHit GetFirstHit(RaycastHit[] rayArray)
     {
-        //currentRayHit = rayHit.NONE;
+        // Check array of hit points
+        for (int i = 0; i < rayArray.Length; ++i)
+        {
+            // Set hit object as first none player object
+            if (rayArray[i].collider.tag != "Player" &&
+                rayArray[i].collider.tag != "MainCamera")
+            {
+                // Return hit
+                return rayArray[i];
+            }
+        }
 
-        //// Middle raycast hits
-        //if (midHit.collider != null && midHit.distance <= detectorLength && midHit.distance != 0.0f)
-        //{
-        //    obstacle = midHit.collider.gameObject;
-        //    currentRayHit = rayHit.MID;
-        //    return true;
-        //}
-        //// Bottom raycast hits
-        //else if (botHit.collider != null && botHit.distance <= detectorLength && botHit.distance != 0.0f)
-        //{
-        //    obstacle = botHit.collider.gameObject;
-        //    currentRayHit = rayHit.BOT;
-        //    return true;
-        //}
-        //// Top raycast hits
-        //else if (topHit.collider != null && topHit.distance <= detectorLength && topHit.distance != 0.0f)
-        //{
-        //    obstacle = topHit.collider.gameObject;
-        //    currentRayHit = rayHit.TOP;
-        //    return true;
-        //}
-        //// Upper raycast hits
-        //else if (upperHit.collider != null && upperHit.distance <= detectorLength && upperHit.distance != 0.0f)
-        //{
-        //    obstacle = upperHit.collider.gameObject;
-        //    currentRayHit = rayHit.UPPER;
-        //    return true;
-        //}
-
-        return false;
+        // Return first hit
+        return new RaycastHit();
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns position of point where 
+    // Returns hit on target
     /////////////////////////////////////////////////////////////////
-    private Vector3 GetHitPoint()
+    private RaycastHit GetTargetHit(RaycastHit[] rayArray, GameObject target)
     {
-        // return hit point from the raycast that hit obstacle
-        //switch (currentRayHit)
-        //{
-        //    case rayHit.BOT:
-        //        return botHit.point;
-        //    case rayHit.MID:
-        //        return midHit.point;
-        //    case rayHit.TOP:
-        //        return topHit.point;
-        //    case rayHit.UPPER:
-        //        return upperHit.point;
-        //    default:
-        //        return obstacle.transform.position;
-        //}
-        return Vector3.zero;
+        // Check array of hit points
+        for (int i = 0; i < rayArray.Length; ++i)
+        {
+            // Set hit object as target object
+            if (rayArray[i].collider.gameObject == target)
+            {
+                // Return hit
+                return rayArray[i];
+            }
+        }
+
+        // Return first hit
+        return new RaycastHit();
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns true if player can vault obstacle
+    // Returns depth of closest section of obstacle
     /////////////////////////////////////////////////////////////////
-    public bool CanVault()
+    private float GetDepth(GameObject obj)
     {
-        Vector3         topEdge = GetHitPoint();
-        RaycastHit      vaultRay;
-        float           height = obstacle.GetComponent<Collider>().bounds.size.y,
-                        space,
-                        depth;
-        RaycastHit[]    hits;
+        float depth;
+
+        // Sets depth as longest size axis
+        if (obj.GetComponent<Collider>().bounds.size.z > obstacle.GetComponent<Collider>().bounds.size.x)
+            depth = obj.GetComponent<Collider>().bounds.size.z;
+        else
+            depth = obj.GetComponent<Collider>().bounds.size.x;
+
+        // Add extra onto depth for sake of raycasting
+        ++depth;
+
+        // Get depth
+        mainRay = Physics.RaycastAll(hitPoint + (transform.forward * depth),
+                                    -transform.forward,
+                                    depth);
+
+        if (GetFirstHit(mainRay).collider.gameObject == obj)
+            depth = (GetFirstHit(mainRay).point - hitPoint).magnitude;
+        Debug.DrawRay(hitPoint, transform.forward * depth, debugColour, 0.01f);
+
+        return depth;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns height of closest section of obstacle
+    /////////////////////////////////////////////////////////////////
+    private float GetHeight(GameObject obj)
+    {
+        float   height = obj.GetComponent<Collider>().bounds.size.y;
+        Vector3 topEdge = hitPoint;
 
         // Set top edge vector
         ++height;
-        hits = Physics.RaycastAll(topEdge + (Vector3.up * height), -Vector3.up, height + detectorLength);
+        mainRay = Physics.RaycastAll(hitPoint + (Vector3.up * height), -Vector3.up, height + detectorLength);
 
-        for (int i = 0; i < hits.Length; ++i)
-        {
-            if (hits[i].collider.gameObject == obstacle)
-            {
-                topEdge.y = hits[i].point.y;
-                i = hits.Length;
-            }
-        }
+        topEdge.y = GetTargetHit(mainRay, obj).point.y;
 
         // Get height of top of obstacle from ground
-        Physics.Raycast(topEdge, -Vector3.up, out vaultRay);
-        height = vaultRay.distance;
-        Debug.DrawRay(topEdge, -Vector3.up * vaultRay.distance, vaultDebugColour, 0.01f);
+        mainRay = Physics.RaycastAll(topEdge, -Vector3.up, height + detectorLength);
+        height = GetFirstHit(mainRay).distance;
+        Debug.DrawRay(topEdge, -Vector3.up * height, debugColour, 0.01f);
+
+        return height;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets all action bools to false
+    /////////////////////////////////////////////////////////////////
+    private void ResetActions()
+    {
+        canSlide = false;
+        canVault = false;
+        canMantle = false;
+        canClimb = false;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Checks obstacle dimensions and sets action bools
+    /////////////////////////////////////////////////////////////////
+    private void ObstacleCheck(GameObject obj)
+    {
+        // Sets all actions to false
+        ResetActions();
+
+        Vector3     topEdge = hitPoint,
+                    obstacleBot = hitPoint;
+        RaycastHit  actionRay;
+        float       topHeight = obstacle.GetComponent<Collider>().bounds.size.y,
+                    botHeight,
+                    space,
+                    depth;
+
+        // Set top edge vector
+        ++topHeight;
+        mainRay = Physics.RaycastAll(topEdge + (Vector3.up * topHeight), -Vector3.up, topHeight + detectorLength);
+
+        topEdge.y = GetTargetHit(mainRay, obstacle).point.y;
 
         // Get depth of mesh
-        if (obstacle.GetComponent<Collider>().bounds.size.z > obstacle.GetComponent<Collider>().bounds.size.x)
-            depth = obstacle.GetComponent<Collider>().bounds.size.z;
-        else
-            depth = obstacle.GetComponent<Collider>().bounds.size.x;
+        depth = GetDepth(obstacle);
 
-        ++depth;
+        // Get height from ground
+        obstacleBot += (transform.forward * GetDepth(obstacle) / 2);
+        mainRay = Physics.RaycastAll(obstacleBot, -Vector3.up, detectorLength);
+        obstacleBot = GetFirstHit(mainRay).point;
+        mainRay = Physics.RaycastAll(obstacleBot, Vector3.up, detectorLength);
+        Debug.DrawLine(obstacleBot, GetFirstHit(mainRay).point, debugColour, 0.01f);
+        obstacleBot = GetFirstHit(mainRay).point;
+        botHeight = GetFirstHit(mainRay).distance;
 
-        hits = Physics.RaycastAll( GetHitPoint() + (transform.forward * depth),
-                                                -transform.forward,
-                                                depth);
-
-        for (int i = 0; i < hits.Length; ++i)
-        {
-            if (hits[i].collider.gameObject == obstacle)
-            {
-                depth = (hits[i].point - GetHitPoint()).magnitude;
-                i = hits.Length;
-            }
-        }
-        Debug.DrawRay(topEdge, transform.forward * depth, vaultDebugColour, 0.01f);
-
+        // Get height of top of obstacle from ground
+        Physics.Raycast(topEdge, -Vector3.up, out actionRay);
+        topHeight = actionRay.distance;
+        Debug.DrawRay(topEdge, -Vector3.up * topHeight, debugColour, 0.01f);
+        
         // Get space above obstacle
         Physics.Raycast(topEdge + (transform.forward * depth / 2),
                         Vector3.up,
-                        out vaultRay);
-        if (vaultRay.collider == null)
+                        out actionRay);
+        if (actionRay.collider == null)
             space = jumpHeight;
         else
-            space = vaultRay.distance;
+            space = actionRay.distance;
 
-        Debug.DrawRay(topEdge + (transform.forward * depth / 2), Vector3.up * space, vaultDebugColour, 0.01f);
+        Debug.DrawRay(topEdge + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.01f);
+        
+        // Can slide
+        if (botHeight > crouchingHeight)
+            canSlide = true;
 
         // Can vault
-        if (height <= crouchingHeight &&
-            depth < playerWidth &&
-            space >= crouchingHeight)
-            return true;
+        if (topHeight >= crouchingHeight &&
+            space > crouchingHeight &&
+            depth < playerWidth)
+            canVault = true;
 
-        // Can't vault
-        return false;
+        // Can mantle
+        if (topHeight <= jumpHeight &&
+            space > crouchingHeight &&
+            depth >= playerWidth)
+            canMantle = true;
+
+        // Can climb
+        if (topHeight > jumpHeight &&
+            botHeight < standingHeight)
+            canClimb = true;
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns true if player can climb obstacle
+    // Returns can vault
+    /////////////////////////////////////////////////////////////////
+    public bool CanVault()
+    {
+        return canVault;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns can climb
     /////////////////////////////////////////////////////////////////
     public bool CanClimb()
     {
-        // DO STUFF
-        return false;
+        return canClimb;
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns true if player can mantle obstacle
+    // Returns can mantle
     /////////////////////////////////////////////////////////////////
     public bool CanMantle()
     {
-        // DO STUFF
-        return false;
+        return canMantle;
     }
 
     /////////////////////////////////////////////////////////////////
-    // Returns true if player can slide under obstacle
+    // Returns can slide
     /////////////////////////////////////////////////////////////////
     public bool CanSlide()
     {
-        Vector3 obstacleBot = GetHitPoint();
-        RaycastHit slideRay;
-        
-        obstacleBot += (transform.forward * obstacle.GetComponent<Collider>().bounds.extents.z);
-
-        // Raycast down from bottom of obstacle to ground
-        Physics.Raycast(obstacleBot, -Vector3.up, out slideRay);
-
-        // Raycast up from ground to get distance
-        Physics.Raycast(slideRay.point, Vector3.up, out slideRay);
-        Debug.DrawLine(slideRay.point - (Vector3.up * slideRay.distance), slideRay.point, slideDebugColour, 0.01f);
-
-        // If distance from ground is more than crouching height
-        if (slideRay.distance != 0.0f &&
-            slideRay.distance >= crouchingHeight)
-        {
-            // Can slide
-            return true;
-        }
-
-        // Can't slide
-        return false;
+        return canSlide;
     }
 }
