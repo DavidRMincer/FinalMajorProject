@@ -2,26 +2,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum MovementState
+{
+    STANDING, CROUCHING, SNEAKING, WALKING, RUNNING, JUMPING,
+    FALLING, VAULTING, SLIDING, MANTLING, CLIMBING
+};
+
+public enum StatePhase
+{
+    START, MIDDLE, END
+};
+
 public class Player_Script : MonoBehaviour
 {
-    public enum MovementState
-    {
-        STANDING, CROUCHING, SNEAKING, WALKING, RUNNING, JUMPING,
-        FALLING, VAULTING, SLIDING, MANTLING, CLIMBING
-    };
-
-    public enum StatePhase
-    {
-        START, MIDDLE, END
-    };
 
     private float               currentSpeed,
-                                distToGround,
                                 crouchHeight,
                                 jumpHeight;
     private Rigidbody           rb;
     private MovementState       currentMoveState;
     private StatePhase          currentStatePhase;
+    private bool                canSlide,
+                                canVault,
+                                canMantle,
+                                canClimb;
 
     internal CapsuleCollider    collider;
 
@@ -46,7 +50,6 @@ public class Player_Script : MonoBehaviour
         // Set dimensions
         crouchHeight = collider.height / 2;
         jumpHeight = collider.height * 2;
-        distToGround = crouchHeight + 0.1f;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -54,16 +57,53 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        
+        switch (currentMoveState)
+        {
+            case MovementState.STANDING:
+            case MovementState.CROUCHING:
+            case MovementState.VAULTING:
+            case MovementState.SLIDING:
+            case MovementState.MANTLING:
+                currentSpeed = 0.0f;
+                break;
+
+            case MovementState.WALKING:
+                currentSpeed = walkSpeed;
+                break;
+
+            case MovementState.RUNNING:
+                currentSpeed = runSpeed;
+                break;
+                
+            case MovementState.SNEAKING:
+                currentSpeed = sneakSpeed;
+                break;
+
+            case MovementState.CLIMBING:
+                break;
+            default:
+                break;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets all action bools to false
+    /////////////////////////////////////////////////////////////////
+    internal void ResetActions()
+    {
+        canSlide = false;
+        canVault = false;
+        canMantle = false;
+        canClimb = false;
     }
 
     /////////////////////////////////////////////////////////////////
     // Returns true if grounded
     /////////////////////////////////////////////////////////////////
-    private bool CanJump()
+    internal bool CanJump()
     {
         // Returns true if raycast collides with ground
-        return Physics.Raycast(transform.position, -Vector3.up, distToGround);
+        return Physics.Raycast(transform.position, -Vector3.up, (collider.height / 2) + 0.1f);
     }
     
     /////////////////////////////////////////////////////////////////
@@ -72,7 +112,8 @@ public class Player_Script : MonoBehaviour
     public void Move(float x, float z)
     {
         // Set current speed to walk speed
-        currentSpeed = walkSpeed * Time.fixedDeltaTime;
+        float moveSpeed = currentSpeed * Time.deltaTime;
+        Debug.Log(moveSpeed);
 
         // Calculate new rotation
         float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
@@ -83,7 +124,7 @@ public class Player_Script : MonoBehaviour
         transform.rotation = Quaternion.Euler(Vector3.up * angle);
 
         // Calculate velocity
-        Vector3 newVelocity = transform.forward * currentSpeed;
+        Vector3 newVelocity = transform.forward * moveSpeed;
         newVelocity.y = rb.velocity.y;
 
         // Apply velocity
@@ -98,8 +139,23 @@ public class Player_Script : MonoBehaviour
         // If jump inputted and player grounded
         if (CanJump())
         {
+            if (CanVault())
+            {
+                // VAULT
+            }
+
+            else if (CanMantle())
+            {
+                // MANTLE
+            }
+
+            else if (CanClimb())
+            {
+                // CLIMB
+            }
+
             // Apply upward jump force
-            rb.AddForce(Vector3.up * jumpForce);
+            else rb.AddForce(Vector3.up * jumpForce);
         }
     }
 
@@ -128,5 +184,69 @@ public class Player_Script : MonoBehaviour
     public StatePhase GetStatePhase()
     {
         return currentStatePhase;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns can vault
+    /////////////////////////////////////////////////////////////////
+    public bool CanVault()
+    {
+        return canVault;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns can climb
+    /////////////////////////////////////////////////////////////////
+    public bool CanClimb()
+    {
+        return canClimb;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns can mantle
+    /////////////////////////////////////////////////////////////////
+    public bool CanMantle()
+    {
+        return canMantle;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns can slide
+    /////////////////////////////////////////////////////////////////
+    public bool CanSlide()
+    {
+        return canSlide;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets can slide
+    /////////////////////////////////////////////////////////////////
+    public void SetCanSlide(bool result)
+    {
+        canSlide = result;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets can vault
+    /////////////////////////////////////////////////////////////////
+    public void SetCanVault(bool result)
+    {
+        canVault = result;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets can mantle
+    /////////////////////////////////////////////////////////////////
+    public void SetCanMantle(bool result)
+    {
+        canMantle = result;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets can climb
+    /////////////////////////////////////////////////////////////////
+    public void SetCanClimb(bool result)
+    {
+        canClimb = result;
     }
 }

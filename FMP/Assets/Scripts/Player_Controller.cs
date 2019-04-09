@@ -58,18 +58,143 @@ public class Player_Controller : MonoBehaviour
 
         // MOVEMENT
 
-        // If player inputs movement
-        if (Input.GetAxis("Horizontal") != 0.0f ||
-            Input.GetAxis("Vertical") != 0.0f)
+        switch (playerScript.GetMovementState())
         {
-            // Pass input axis into move function
-            playerScript.Move(  Input.GetAxis("Horizontal"),
-                                Input.GetAxis("Vertical"));
-        }
+            case MovementState.STANDING:
 
-        // Jump if player inputs jump
-        if (Input.GetButtonDown("Jump"))
-            playerScript.Jump();
+                // Player falls
+                if (!playerScript.CanJump())
+                    playerScript.SetMovementState(MovementState.FALLING);
+
+                // Player crouchs
+                else if (Input.GetButtonDown("Crouch"))
+                    playerScript.SetMovementState(MovementState.CROUCHING);
+
+                // If player inputs movement
+                else if (   Input.GetAxis("Horizontal") != 0.0f ||
+                            Input.GetAxis("Vertical") != 0.0f)
+                    playerScript.SetMovementState(MovementState.WALKING);
+
+                // Player jumps
+                else if (Input.GetButtonDown("Jump"))
+                    playerScript.Jump();
+                break;
+
+            case MovementState.CROUCHING:
+
+                // Player falls
+                if (!playerScript.CanJump())
+                    playerScript.SetMovementState(MovementState.FALLING);
+
+                // Player stands up
+                else if (Input.GetButtonDown("Crouch"))
+                    playerScript.SetMovementState(MovementState.STANDING);
+
+                // If player inputs movement
+                else if (   Input.GetAxis("Horizontal") != 0.0f ||
+                            Input.GetAxis("Vertical") != 0.0f)
+                    playerScript.SetMovementState(MovementState.SNEAKING);
+                break;
+
+            case MovementState.SNEAKING:
+
+                // Player falls
+                if (!playerScript.CanJump())
+                    playerScript.SetMovementState(MovementState.FALLING);
+
+                // Player stands up
+                else if (Input.GetButtonDown("Crouch"))
+                    playerScript.SetMovementState(MovementState.WALKING);
+
+                // Player stops moving
+                else if (   Input.GetAxis("Horizontal") == 0.0f &&
+                            Input.GetAxis("Vertical") == 0.0f)
+                    playerScript.SetMovementState(MovementState.CROUCHING);
+
+                // Player moves
+                else playerScript.Move( Input.GetAxis("Horizontal"),
+                                        Input.GetAxis("Vertical"));
+                break;
+
+            case MovementState.WALKING:
+
+                // Player falls
+                if (!playerScript.CanJump())
+                    playerScript.SetMovementState(MovementState.FALLING);
+
+                // Player crouchs
+                else if (Input.GetButtonDown("Crouch"))
+                    playerScript.SetMovementState(MovementState.SNEAKING);
+
+                // Player jumps
+                else if (Input.GetButtonDown("Jump"))
+                    playerScript.Jump();
+
+                // Player runs
+                else if (Input.GetButton("Sprint"))
+                    playerScript.SetMovementState(MovementState.RUNNING);
+
+                // Player stops moving
+                else if (   Input.GetAxis("Horizontal") == 0.0f &&
+                            Input.GetAxis("Vertical") == 0.0f)
+                    playerScript.SetMovementState(MovementState.STANDING);
+
+                // Player moves
+                else playerScript.Move( Input.GetAxis("Horizontal"),
+                                        Input.GetAxis("Vertical"));
+                break;
+
+            case MovementState.RUNNING:
+
+                // Player falls
+                if (!playerScript.CanJump())
+                    playerScript.SetMovementState(MovementState.FALLING);
+
+                // Player slides
+                else if (Input.GetButtonDown("Crouch") &&
+                            playerScript.CanSlide())
+                    playerScript.SetMovementState(MovementState.SLIDING);
+
+                // Player jumps
+                else if (Input.GetButtonDown("Jump"))
+                    playerScript.Jump();
+
+                // Player runs
+                else if (!Input.GetButton("Sprint"))
+                    playerScript.SetMovementState(MovementState.WALKING);
+
+                // Player stops moving
+                else if (   Input.GetAxis("Horizontal") == 0.0f &&
+                            Input.GetAxis("Vertical") == 0.0f)
+                    playerScript.SetMovementState(MovementState.STANDING);
+
+                // Player moves
+                else playerScript.Move( Input.GetAxis("Horizontal"),
+                                        Input.GetAxis("Vertical"));
+                break;
+
+            case MovementState.JUMPING:
+            case MovementState.FALLING:
+
+                // Player lands
+                if (playerScript.CanJump())
+                {
+                    playerScript.SetMovementState(MovementState.STANDING);
+                }
+
+                // If player inputs movement
+                if (Input.GetAxis("Horizontal") != 0.0f ||
+                    Input.GetAxis("Vertical") != 0.0f)
+                {
+                    // Pass input axis into move function
+                    playerScript.Move(Input.GetAxis("Horizontal"),
+                                        Input.GetAxis("Vertical"));
+                }
+                break;
+                
+            default:
+                break;
+        }
     }
 
     /////////////////////////////////////////////////////////////////

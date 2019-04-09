@@ -11,10 +11,6 @@ public class Obstacle_Detector : MonoBehaviour
     private RaycastHit[]    mainRay;
     private GameObject      obstacle;
     private Vector3         hitPoint;
-    private bool            canSlide,
-                            canVault,
-                            canMantle,
-                            canClimb;
 
     public GameObject       playerObject;
     public float            detectorLength;
@@ -160,23 +156,12 @@ public class Obstacle_Detector : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
-    // Sets all action bools to false
-    /////////////////////////////////////////////////////////////////
-    private void ResetActions()
-    {
-        canSlide = false;
-        canVault = false;
-        canMantle = false;
-        canClimb = false;
-    }
-
-    /////////////////////////////////////////////////////////////////
     // Checks obstacle dimensions and sets action bools
     /////////////////////////////////////////////////////////////////
     private void ObstacleCheck(GameObject obj)
     {
         // Sets all actions to false
-        ResetActions();
+        playerObject.GetComponent<Player_Script>().ResetActions();
 
         Vector3     topEdge = hitPoint,
                     obstacleBot = hitPoint;
@@ -221,56 +206,20 @@ public class Obstacle_Detector : MonoBehaviour
         Debug.DrawRay(topEdge + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.01f);
         
         // Can slide
-        if (botHeight > crouchingHeight)
-            canSlide = true;
+        GetComponent<Player_Script>().SetCanSlide(  botHeight > crouchingHeight);
 
         // Can vault
-        if (topHeight >= crouchingHeight &&
-            space > crouchingHeight &&
-            depth < playerWidth)
-            canVault = true;
+        GetComponent<Player_Script>().SetCanVault(  topHeight >= crouchingHeight &&
+                                                    space > crouchingHeight &&
+                                                    depth < playerWidth);
 
         // Can mantle
-        if (topHeight <= jumpHeight &&
-            space > crouchingHeight &&
-            depth >= playerWidth)
-            canMantle = true;
+        GetComponent<Player_Script>().SetCanMantle( topHeight <= jumpHeight &&
+                                                    space > crouchingHeight &&
+                                                    depth >= playerWidth);
 
         // Can climb
-        if (topHeight > jumpHeight &&
-            botHeight < standingHeight)
-            canClimb = true;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Returns can vault
-    /////////////////////////////////////////////////////////////////
-    public bool CanVault()
-    {
-        return canVault;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Returns can climb
-    /////////////////////////////////////////////////////////////////
-    public bool CanClimb()
-    {
-        return canClimb;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Returns can mantle
-    /////////////////////////////////////////////////////////////////
-    public bool CanMantle()
-    {
-        return canMantle;
-    }
-
-    /////////////////////////////////////////////////////////////////
-    // Returns can slide
-    /////////////////////////////////////////////////////////////////
-    public bool CanSlide()
-    {
-        return canSlide;
+        GetComponent<Player_Script>().SetCanClimb(  topHeight > jumpHeight &&
+                                                    botHeight < standingHeight);
     }
 }
