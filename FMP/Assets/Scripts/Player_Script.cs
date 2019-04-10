@@ -27,6 +27,9 @@ public class Player_Script : MonoBehaviour
                                 canMantle,
                                 canClimb;
 
+    internal Vector3            startActionPoint,
+                                middleActionPoint,
+                                endActionPoint;
     internal CapsuleCollider    collider;
 
     public float                walkSpeed,
@@ -113,7 +116,6 @@ public class Player_Script : MonoBehaviour
     {
         // Set current speed to walk speed
         float moveSpeed = currentSpeed * Time.deltaTime;
-        Debug.Log(moveSpeed);
 
         // Calculate new rotation
         float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;

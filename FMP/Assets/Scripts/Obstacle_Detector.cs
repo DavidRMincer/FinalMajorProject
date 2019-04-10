@@ -11,41 +11,68 @@ public class Obstacle_Detector : MonoBehaviour
     private RaycastHit[]    mainRay;
     private GameObject      obstacle;
     private Vector3         hitPoint;
+    private Player_Script   playerScript;
 
     public GameObject       playerObject;
     public float            detectorLength;
-    public Color            debugColour;
+    public Color            debugColour,
+                            actionColour;
 
+    /////////////////////////////////////////////////////////////////
+    // Runs on start up
+    /////////////////////////////////////////////////////////////////
     private void Start()
     {
         SetDimensions();
+        playerScript = playerObject.GetComponent<Player_Script>();
     }
 
+    /////////////////////////////////////////////////////////////////
+    // Runs while triggered by another collider
+    /////////////////////////////////////////////////////////////////
     private void OnTriggerStay(Collider other)
     {
         if (other.tag != "Player" &&
             other.tag != "MainCamera")
         {
-            // Set hit point
-            hitPoint = other.ClosestPoint(playerObject.transform.position);
-
-            mainRay = Physics.RaycastAll( playerObject.transform.position,
-                                                    (hitPoint - playerObject.transform.position).normalized,
-                                                    detectorLength);
-
-            if (GetFirstHit(mainRay).collider == other)
-            {
+            // Set collider as obstacle if closest to player
+            if ((obstacle == null) ||   (obstacle != null &&
+                                        ((other.ClosestPoint(playerObject.transform.position) - playerObject.transform.position).magnitude <=
+                                        (obstacle.GetComponent<Collider>().ClosestPoint(playerObject.transform.position) - playerObject.transform.position).magnitude))
+                )
                 obstacle = other.gameObject;
-                Debug.DrawRay(playerObject.transform.position,
-                                hitPoint - playerObject.transform.position,
-                                debugColour,
-                                0.016f);
-                
-                ObstacleCheck(obstacle);
-            }
         }
     }
-    
+
+    /////////////////////////////////////////////////////////////////
+    // Runs when collider leaves trigger bounds
+    /////////////////////////////////////////////////////////////////
+    private void OnTriggerExit(Collider other)
+    {
+        // Set obstacle to null if collider is obstacle
+        if (other.gameObject == obstacle)
+            obstacle = null;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Updates gameplay and physics
+    /////////////////////////////////////////////////////////////////
+    private void FixedUpdate()
+    {
+        if (obstacle != null)
+        {
+            Debug.DrawLine(playerObject.transform.position, hitPoint, debugColour, 0.01f);
+
+            // Set hit point
+            hitPoint = obstacle.GetComponent<Collider>().ClosestPoint(playerObject.transform.position);
+
+            // Measure obstacle dimensions
+            ObstacleCheck(obstacle);
+
+            SetActionPoints();
+        }
+    }
+
     /////////////////////////////////////////////////////////////////
     // Sets dimensions from player and detector box dimensions
     /////////////////////////////////////////////////////////////////
@@ -156,6 +183,23 @@ public class Obstacle_Detector : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
+    // Returns position of obstacle's top edge
+    /////////////////////////////////////////////////////////////////
+    private Vector3 GetTopEdge(GameObject obj)
+    {
+        Vector3 topEdge = hitPoint;
+        float topHeight = obj.GetComponent<Collider>().bounds.size.y;
+
+        // Set top edge vector
+        ++topHeight;
+        mainRay = Physics.RaycastAll(topEdge + (Vector3.up * topHeight), -Vector3.up, topHeight + detectorLength);
+
+        topEdge.y = GetTargetHit(mainRay, obj).point.y;
+
+        return topEdge;
+    }
+
+    /////////////////////////////////////////////////////////////////
     // Checks obstacle dimensions and sets action bools
     /////////////////////////////////////////////////////////////////
     private void ObstacleCheck(GameObject obj)
@@ -163,20 +207,13 @@ public class Obstacle_Detector : MonoBehaviour
         // Sets all actions to false
         playerObject.GetComponent<Player_Script>().ResetActions();
 
-        Vector3     topEdge = hitPoint,
-                    obstacleBot = hitPoint;
+        Vector3     obstacleBot = hitPoint;
         RaycastHit  actionRay;
         float       topHeight = obstacle.GetComponent<Collider>().bounds.size.y,
                     botHeight,
                     space,
                     depth;
-
-        // Set top edge vector
-        ++topHeight;
-        mainRay = Physics.RaycastAll(topEdge + (Vector3.up * topHeight), -Vector3.up, topHeight + detectorLength);
-
-        topEdge.y = GetTargetHit(mainRay, obstacle).point.y;
-
+        
         // Get depth of mesh
         depth = GetDepth(obstacle);
 
@@ -190,12 +227,12 @@ public class Obstacle_Detector : MonoBehaviour
         botHeight = GetFirstHit(mainRay).distance;
 
         // Get height of top of obstacle from ground
-        Physics.Raycast(topEdge, -Vector3.up, out actionRay);
+        Physics.Raycast(GetTopEdge(obstacle), -Vector3.up, out actionRay);
         topHeight = actionRay.distance;
-        Debug.DrawRay(topEdge, -Vector3.up * topHeight, debugColour, 0.01f);
+        Debug.DrawRay(GetTopEdge(obstacle), -Vector3.up * topHeight, debugColour, 0.01f);
         
         // Get space above obstacle
-        Physics.Raycast(topEdge + (transform.forward * depth / 2),
+        Physics.Raycast(GetTopEdge(obstacle) + (transform.forward * depth / 2),
                         Vector3.up,
                         out actionRay);
         if (actionRay.collider == null)
@@ -203,23 +240,122 @@ public class Obstacle_Detector : MonoBehaviour
         else
             space = actionRay.distance;
 
-        Debug.DrawRay(topEdge + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.01f);
-        
+        Debug.DrawRay(GetTopEdge(obstacle) + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.01f);
+
         // Can slide
-        GetComponent<Player_Script>().SetCanSlide(  botHeight > crouchingHeight);
+        playerScript.SetCanSlide(   botHeight > crouchingHeight);
 
         // Can vault
-        GetComponent<Player_Script>().SetCanVault(  topHeight >= crouchingHeight &&
-                                                    space > crouchingHeight &&
-                                                    depth < playerWidth);
+        playerScript.SetCanVault(   topHeight >= crouchingHeight &&
+                                    space > crouchingHeight &&
+                                    depth < playerWidth);
 
         // Can mantle
-        GetComponent<Player_Script>().SetCanMantle( topHeight <= jumpHeight &&
-                                                    space > crouchingHeight &&
-                                                    depth >= playerWidth);
+        playerScript.SetCanMantle(  topHeight <= jumpHeight &&
+                                    space > crouchingHeight &&
+                                    depth >= playerWidth);
 
         // Can climb
-        GetComponent<Player_Script>().SetCanClimb(  topHeight > jumpHeight &&
-                                                    botHeight < standingHeight);
+        playerScript.SetCanClimb(   topHeight > jumpHeight &&
+                                    botHeight < standingHeight);
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Sets action points based on action
+    /////////////////////////////////////////////////////////////////
+    public void SetActionPoints()
+    {
+        switch (playerScript.GetMovementState())
+        {
+            case MovementState.VAULTING:
+                // Set start point
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint.y = playerObject.transform.position.y;
+                Debug.DrawRay(  playerObject.transform.position,
+                                playerScript.startActionPoint - playerObject.transform.position,
+                                actionColour,
+                                playerScript.vaultDuration);
+
+                // Set middle point
+                playerScript.middleActionPoint = hitPoint + (playerObject.transform.forward * (GetDepth(obstacle) / 2));
+                playerScript.middleActionPoint.y = GetTopEdge(obstacle).y + (crouchingHeight / 2);
+                Debug.DrawRay(  playerScript.startActionPoint,
+                                playerScript.middleActionPoint - playerScript.startActionPoint,
+                                actionColour,
+                                playerScript.vaultDuration);
+
+                // Set end point
+                playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth(obstacle)) + (playerObject.transform.forward * (playerWidth / 2));
+                playerScript.endActionPoint.y = playerObject.transform.position.y;
+                Debug.DrawRay(  playerScript.middleActionPoint,
+                                playerScript.endActionPoint - playerScript.middleActionPoint,
+                                actionColour,
+                                playerScript.vaultDuration);
+                break;
+
+            case MovementState.SLIDING:
+                // Set start point
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint.y = playerObject.transform.position.y - (crouchingHeight / 2);
+                Debug.DrawRay(  playerObject.transform.position,
+                                playerScript.startActionPoint - playerObject.transform.position,
+                                actionColour,
+                                playerScript.slideDuration);
+
+                // Set end point
+                playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerWidth + GetDepth(obstacle)));
+                Debug.DrawRay(  playerScript.startActionPoint,
+                                playerScript.endActionPoint - playerScript.startActionPoint,
+                                actionColour,
+                                playerScript.slideDuration);
+                break;
+
+            case MovementState.MANTLING:
+                // Set start point
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint.y = playerObject.transform.position.y;
+                Debug.DrawRay(  playerObject.transform.position,
+                                playerScript.startActionPoint - playerObject.transform.position,
+                                actionColour,
+                                playerScript.mantleDuration);
+
+                // Set middle point
+                playerScript.middleActionPoint = GetTopEdge(obstacle) + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.middleActionPoint -= Vector3.up * (crouchingHeight / 2);
+                Debug.DrawRay(  playerScript.startActionPoint,
+                                playerScript.middleActionPoint - playerScript.startActionPoint,
+                                actionColour,
+                                playerScript.mantleDuration);
+
+                // Set end point
+                playerScript.endActionPoint = GetTopEdge(obstacle) + (playerObject.transform.forward * (playerWidth / 2));
+                playerScript.endActionPoint += Vector3.up * (crouchingHeight / 2);
+                Debug.DrawRay(  playerScript.middleActionPoint,
+                                playerScript.endActionPoint - playerScript.middleActionPoint,
+                                actionColour,
+                                playerScript.mantleDuration);
+                break;
+
+            case MovementState.CLIMBING:
+                // Set start point
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint.y = playerObject.transform.position.y;
+                Debug.DrawRay(playerObject.transform.position,
+                                playerScript.startActionPoint - playerObject.transform.position,
+                                actionColour,
+                                playerScript.slideDuration);
+
+                // Set end point
+                playerScript.endActionPoint = playerScript.startActionPoint + (Vector3.up * standingHeight);
+                Debug.DrawRay(playerScript.startActionPoint,
+                                playerScript.endActionPoint - playerScript.startActionPoint,
+                                actionColour,
+                                playerScript.slideDuration);
+                break;
+
+            default:
+                break;
+        }
+        // DO STUFF
     }
 }

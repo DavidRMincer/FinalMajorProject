@@ -195,6 +195,33 @@ public class Player_Controller : MonoBehaviour
             default:
                 break;
         }
+
+        // FOR TESTING PURPOSES ONLY!
+
+        if (Input.GetKeyDown("1"))
+        {
+            playerScript.SetMovementState(MovementState.VAULTING);
+        }
+        if (Input.GetKeyUp("1"))
+            playerScript.SetMovementState(MovementState.STANDING);
+        if (Input.GetKeyDown("2"))
+        {
+            playerScript.SetMovementState(MovementState.SLIDING);
+        }
+        if (Input.GetKeyUp("2"))
+            playerScript.SetMovementState(MovementState.STANDING);
+        if (Input.GetKeyDown("3"))
+        {
+            playerScript.SetMovementState(MovementState.MANTLING);
+        }
+        if (Input.GetKeyUp("3"))
+            playerScript.SetMovementState(MovementState.STANDING);
+        if (Input.GetKeyDown("4"))
+        {
+            playerScript.SetMovementState(MovementState.CLIMBING);
+        }
+        if (Input.GetKeyUp("4"))
+            playerScript.SetMovementState(MovementState.STANDING);
     }
 
     /////////////////////////////////////////////////////////////////
