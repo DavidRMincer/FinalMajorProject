@@ -18,27 +18,39 @@ public class Player_Script : MonoBehaviour
 
     private float               currentSpeed,
                                 crouchHeight,
-                                jumpHeight;
-    private Rigidbody           rb;
-    private MovementState       currentMoveState;
-    private StatePhase          currentStatePhase;
+                                jumpHeight,
+                                vaultMidDuration,
+                                mantleMidDuration,
+                                currentActionTimer;
     private bool                canSlide,
                                 canVault,
                                 canMantle,
                                 canClimb;
+    private Rigidbody           rb;
+    private MovementState       currentMoveState;
+    private StatePhase          currentStatePhase;
+    private Vector3             actionOrigin;
+
+    /////////////////////////////////////////////////////////////////
 
     internal Vector3            startActionPoint,
                                 middleActionPoint,
                                 endActionPoint;
     internal CapsuleCollider    collider;
 
+    /////////////////////////////////////////////////////////////////
+
     public float                walkSpeed,
                                 runSpeed,
                                 sneakSpeed,
                                 jumpForce,
                                 vaultDuration,
+                                vaultSetupDuration,
                                 slideDuration,
-                                mantleDuration;
+                                slideSetupDuration,
+                                mantleDuration,
+                                mantleSetupDuration,
+                                climbDuration;
     public Camera               camera;
 
     /////////////////////////////////////////////////////////////////
@@ -62,27 +74,155 @@ public class Player_Script : MonoBehaviour
     {
         switch (currentMoveState)
         {
-            case MovementState.STANDING:
-            case MovementState.CROUCHING:
             case MovementState.VAULTING:
+                switch (currentStatePhase)
+                {
+                    case StatePhase.START:
+                        if (currentActionTimer < vaultSetupDuration)
+                        {
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / vaultSetupDuration);
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.MIDDLE;
+                        }
+                        break;
+
+                    case StatePhase.MIDDLE:
+                        if (currentActionTimer < vaultMidDuration)
+                        {
+                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - vaultSetupDuration) / (vaultMidDuration - vaultSetupDuration));
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.END;
+                        }
+                        break;
+
+                    default:
+                        if (currentActionTimer < vaultDuration)
+                        {
+                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - vaultMidDuration) / (vaultDuration - vaultMidDuration));
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            SetMovementState(MovementState.STANDING);
+                            currentActionTimer = 0.0f;
+                        }
+                        break;
+                }
+                break;
+
             case MovementState.SLIDING:
+                switch (currentStatePhase)
+                {
+                    case StatePhase.START:
+                        if (currentActionTimer < slideSetupDuration)
+                        {
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / slideSetupDuration);
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.END;
+                        }
+                        break;
+                    
+                    default:
+                        if (currentActionTimer < slideDuration)
+                        {
+                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - slideSetupDuration) / (slideDuration - slideSetupDuration));
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            SetMovementState(MovementState.STANDING);
+                            currentActionTimer = 0.0f;
+                        }
+                        break;
+                }
+                break;
+
             case MovementState.MANTLING:
-                currentSpeed = 0.0f;
+                switch (currentStatePhase)
+                {
+                    case StatePhase.START:
+                        if (currentActionTimer < mantleSetupDuration)
+                        {
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / mantleSetupDuration);
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.MIDDLE;
+                        }
+                        break;
+
+                    case StatePhase.MIDDLE:
+                        if (currentActionTimer < mantleMidDuration)
+                        {
+                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - mantleSetupDuration) / (mantleMidDuration - mantleSetupDuration));
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.END;
+                        }
+                        break;
+
+                    default:
+                        if (currentActionTimer < mantleDuration)
+                        {
+                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - mantleMidDuration) / (mantleDuration - mantleMidDuration));
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            SetMovementState(MovementState.STANDING);
+                            currentActionTimer = 0.0f;
+                        }
+                        break;
+                }
                 break;
 
             case MovementState.WALKING:
+                // Set current speed
                 currentSpeed = walkSpeed;
                 break;
 
             case MovementState.RUNNING:
+                // Set current speed
                 currentSpeed = runSpeed;
                 break;
                 
             case MovementState.SNEAKING:
+                // Set current speed
                 currentSpeed = sneakSpeed;
                 break;
 
             case MovementState.CLIMBING:
+                switch (currentStatePhase)
+                {
+                    case StatePhase.START:
+                        if (currentActionTimer < climbDuration)
+                        {
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbDuration);
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.END;
+                        }
+                        break;
+                    
+                    default:
+                        // Set current speed
+                        currentSpeed = sneakSpeed;
+                        break;
+                }
                 break;
             default:
                 break;
@@ -143,17 +283,17 @@ public class Player_Script : MonoBehaviour
         {
             if (CanVault())
             {
-                // VAULT
+                SetMovementState(MovementState.VAULTING);
             }
 
             else if (CanMantle())
             {
-                // MANTLE
+                SetMovementState(MovementState.MANTLING);
             }
 
             else if (CanClimb())
             {
-                // CLIMB
+                SetMovementState(MovementState.CLIMBING);
             }
 
             // Apply upward jump force
@@ -170,6 +310,17 @@ public class Player_Script : MonoBehaviour
         currentMoveState = state;
         // Set current state to start
         currentStatePhase = StatePhase.START;
+
+        if (currentMoveState == MovementState.VAULTING ||
+            currentMoveState == MovementState.SLIDING ||
+            currentMoveState == MovementState.MANTLING ||
+            (currentMoveState == MovementState.CLIMBING && currentStatePhase == StatePhase.START))
+        {
+            // Setup for actions
+            actionOrigin = transform.position;
+            collider.enabled = false;
+        }
+        else collider.enabled = true;
     }
 
     /////////////////////////////////////////////////////////////////

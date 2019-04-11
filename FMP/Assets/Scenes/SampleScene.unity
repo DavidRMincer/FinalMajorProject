@@ -813,8 +813,11 @@ MonoBehaviour:
   sneakSpeed: 150
   jumpForce: 400
   vaultDuration: 1
+  vaultSetupDuration: 0.2
   slideDuration: 1
+  slideSetupDuration: 0.2
   mantleDuration: 1
+  mantleSetupDuration: 0.2
   camera: {fileID: 282840813}
 --- !u!114 &1801999041
 MonoBehaviour:

@@ -13,6 +13,8 @@ public class Obstacle_Detector : MonoBehaviour
     private Vector3         hitPoint;
     private Player_Script   playerScript;
 
+    /////////////////////////////////////////////////////////////////
+
     public GameObject       playerObject;
     public float            detectorLength;
     public Color            debugColour,
@@ -51,7 +53,10 @@ public class Obstacle_Detector : MonoBehaviour
     {
         // Set obstacle to null if collider is obstacle
         if (other.gameObject == obstacle)
+        {
             obstacle = null;
+            playerScript.ResetActions();
+        }
     }
 
     /////////////////////////////////////////////////////////////////
@@ -271,7 +276,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set start point
                 playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
-                Debug.DrawRay(  playerObject.transform.position,
+                Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
                                 actionColour,
                                 playerScript.vaultDuration);
@@ -279,7 +284,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set middle point
                 playerScript.middleActionPoint = hitPoint + (playerObject.transform.forward * (GetDepth(obstacle) / 2));
                 playerScript.middleActionPoint.y = GetTopEdge(obstacle).y + (crouchingHeight / 2);
-                Debug.DrawRay(  playerScript.startActionPoint,
+                Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.middleActionPoint - playerScript.startActionPoint,
                                 actionColour,
                                 playerScript.vaultDuration);
@@ -287,7 +292,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set end point
                 playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth(obstacle)) + (playerObject.transform.forward * (playerWidth / 2));
                 playerScript.endActionPoint.y = playerObject.transform.position.y;
-                Debug.DrawRay(  playerScript.middleActionPoint,
+                Debug.DrawRay(playerScript.middleActionPoint,
                                 playerScript.endActionPoint - playerScript.middleActionPoint,
                                 actionColour,
                                 playerScript.vaultDuration);
@@ -297,14 +302,14 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set start point
                 playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y - (crouchingHeight / 2);
-                Debug.DrawRay(  playerObject.transform.position,
+                Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
                                 actionColour,
                                 playerScript.slideDuration);
 
                 // Set end point
                 playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerWidth + GetDepth(obstacle)));
-                Debug.DrawRay(  playerScript.startActionPoint,
+                Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.endActionPoint - playerScript.startActionPoint,
                                 actionColour,
                                 playerScript.slideDuration);
@@ -314,7 +319,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set start point
                 playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
-                Debug.DrawRay(  playerObject.transform.position,
+                Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
                                 actionColour,
                                 playerScript.mantleDuration);
@@ -322,7 +327,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set middle point
                 playerScript.middleActionPoint = GetTopEdge(obstacle) + (-playerObject.transform.forward * (playerWidth / 2));
                 playerScript.middleActionPoint -= Vector3.up * (crouchingHeight / 2);
-                Debug.DrawRay(  playerScript.startActionPoint,
+                Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.middleActionPoint - playerScript.startActionPoint,
                                 actionColour,
                                 playerScript.mantleDuration);
@@ -330,7 +335,7 @@ public class Obstacle_Detector : MonoBehaviour
                 // Set end point
                 playerScript.endActionPoint = GetTopEdge(obstacle) + (playerObject.transform.forward * (playerWidth / 2));
                 playerScript.endActionPoint += Vector3.up * (crouchingHeight / 2);
-                Debug.DrawRay(  playerScript.middleActionPoint,
+                Debug.DrawRay(playerScript.middleActionPoint,
                                 playerScript.endActionPoint - playerScript.middleActionPoint,
                                 actionColour,
                                 playerScript.mantleDuration);

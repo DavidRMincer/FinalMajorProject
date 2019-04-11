@@ -7,7 +7,9 @@ public class Player_Controller : MonoBehaviour
     private Player_Script   playerScript;
     private float           currentXCam,
                             currentYCam;
-    
+
+    /////////////////////////////////////////////////////////////////
+
     public float            cameraDistance,
                             cameraSpeed,
                             minimumCameraAngle,
