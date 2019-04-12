@@ -71,10 +71,16 @@ public class Obstacle_Detector : MonoBehaviour
             // Set hit point
             hitPoint = obstacle.GetComponent<Collider>().ClosestPoint(playerObject.transform.position);
 
+            // Face obstacle while climbing
+            if (playerScript.GetMovementState() == MovementState.CLIMBING)
+                playerObject.transform.LookAt(hitPoint);
+
             // Measure obstacle dimensions
             ObstacleCheck(obstacle);
 
-            SetActionPoints();
+            // Set action point if action started
+            if (playerScript.ActionStarted())
+                SetActionPoints();
         }
     }
 

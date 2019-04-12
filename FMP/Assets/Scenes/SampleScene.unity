@@ -818,6 +818,8 @@ MonoBehaviour:
   slideSetupDuration: 0.2
   mantleDuration: 1
   mantleSetupDuration: 0.2
+  climbDuration: 1
+  climbSetupDuration: 0.2
   camera: {fileID: 282840813}
 --- !u!114 &1801999041
 MonoBehaviour:

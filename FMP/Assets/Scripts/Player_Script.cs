@@ -25,7 +25,8 @@ public class Player_Script : MonoBehaviour
     private bool                canSlide,
                                 canVault,
                                 canMantle,
-                                canClimb;
+                                canClimb,
+                                actionStarted;
     private Rigidbody           rb;
     private MovementState       currentMoveState;
     private StatePhase          currentStatePhase;
@@ -50,7 +51,8 @@ public class Player_Script : MonoBehaviour
                                 slideSetupDuration,
                                 mantleDuration,
                                 mantleSetupDuration,
-                                climbDuration;
+                                climbDuration,
+                                climbSetupDuration;
     public Camera               camera;
 
     /////////////////////////////////////////////////////////////////
@@ -65,6 +67,13 @@ public class Player_Script : MonoBehaviour
         // Set dimensions
         crouchHeight = collider.height / 2;
         jumpHeight = collider.height * 2;
+
+        // Set action mid duration points
+        vaultMidDuration = ((vaultDuration - vaultSetupDuration) / 2) + vaultSetupDuration;
+        mantleMidDuration = ((mantleDuration - mantleSetupDuration) / 2) + mantleSetupDuration;
+
+        // Set default values
+        actionStarted = false;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -72,9 +81,15 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
+        Debug.Log(currentActionTimer + " " + currentStatePhase);
+        // reset action started
+        if (actionStarted)
+            actionStarted = false;
+
         switch (currentMoveState)
         {
             case MovementState.VAULTING:
+                Debug.Log(currentStatePhase);
                 switch (currentStatePhase)
                 {
                     case StatePhase.START:
@@ -104,7 +119,7 @@ public class Player_Script : MonoBehaviour
                     default:
                         if (currentActionTimer < vaultDuration)
                         {
-                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - vaultMidDuration) / (vaultDuration - vaultMidDuration));
+                            transform.position = Vector3.Lerp(middleActionPoint, endActionPoint, (currentActionTimer - vaultMidDuration) / (vaultDuration - vaultMidDuration));
                             currentActionTimer += Time.deltaTime;
                         }
                         else
@@ -134,7 +149,7 @@ public class Player_Script : MonoBehaviour
                     default:
                         if (currentActionTimer < slideDuration)
                         {
-                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - slideSetupDuration) / (slideDuration - slideSetupDuration));
+                            transform.position = Vector3.Lerp(startActionPoint, endActionPoint, (currentActionTimer - slideSetupDuration) / (slideDuration - slideSetupDuration));
                             currentActionTimer += Time.deltaTime;
                         }
                         else
@@ -176,7 +191,7 @@ public class Player_Script : MonoBehaviour
                     default:
                         if (currentActionTimer < mantleDuration)
                         {
-                            transform.position = Vector3.Lerp(startActionPoint, middleActionPoint, (currentActionTimer - mantleMidDuration) / (mantleDuration - mantleMidDuration));
+                            transform.position = Vector3.Lerp(middleActionPoint, endActionPoint, (currentActionTimer - mantleMidDuration) / (mantleDuration - mantleMidDuration));
                             currentActionTimer += Time.deltaTime;
                         }
                         else
@@ -207,17 +222,31 @@ public class Player_Script : MonoBehaviour
                 switch (currentStatePhase)
                 {
                     case StatePhase.START:
+                        if (currentActionTimer < climbSetupDuration)
+                        {
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbSetupDuration);
+                            currentActionTimer += Time.deltaTime;
+                        }
+                        else
+                        {
+                            currentStatePhase = StatePhase.MIDDLE;
+                        }
+                        break;
+
+                    case StatePhase.MIDDLE:
                         if (currentActionTimer < climbDuration)
                         {
-                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbDuration);
+                            transform.position = Vector3.Lerp(startActionPoint, endActionPoint, (currentActionTimer - climbSetupDuration) / (climbDuration - climbSetupDuration));
                             currentActionTimer += Time.deltaTime;
                         }
                         else
                         {
                             currentStatePhase = StatePhase.END;
+                            collider.enabled = true;
+                            currentActionTimer = 0.0f;
                         }
                         break;
-                    
+
                     default:
                         // Set current speed
                         currentSpeed = sneakSpeed;
@@ -248,26 +277,47 @@ public class Player_Script : MonoBehaviour
         // Returns true if raycast collides with ground
         return Physics.Raycast(transform.position, -Vector3.up, (collider.height / 2) + 0.1f);
     }
-    
+
+    /////////////////////////////////////////////////////////////////
+    // Returns action started
+    /////////////////////////////////////////////////////////////////
+    internal bool ActionStarted()
+    {
+        return actionStarted;
+    }
+
     /////////////////////////////////////////////////////////////////
     // Moves gameobject
     /////////////////////////////////////////////////////////////////
     public void Move(float x, float z)
     {
+        Vector3 newVelocity = Vector3.zero;
+
         // Set current speed to walk speed
         float moveSpeed = currentSpeed * Time.deltaTime;
 
-        // Calculate new rotation
-        float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
-        angle += Mathf.Atan2(   transform.position.x - camera.transform.position.x,
-                                transform.position.z - camera.transform.position.z) * Mathf.Rad2Deg;
+        // ON FOOT
+        if (currentMoveState != MovementState.CLIMBING)
+        {
+            // Calculate new rotation
+            float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
+            angle += Mathf.Atan2(transform.position.x - camera.transform.position.x,
+                                    transform.position.z - camera.transform.position.z) * Mathf.Rad2Deg;
 
-        // Apply rotation
-        transform.rotation = Quaternion.Euler(Vector3.up * angle);
+            // Apply rotation
+            transform.rotation = Quaternion.Euler(Vector3.up * angle);
 
-        // Calculate velocity
-        Vector3 newVelocity = transform.forward * moveSpeed;
-        newVelocity.y = rb.velocity.y;
+            // Calculate velocity
+            newVelocity = transform.forward * moveSpeed;
+            newVelocity.y = rb.velocity.y;
+        }
+        // CLIMBING
+        else
+        {
+            // Calculate velocity
+            newVelocity += transform.right * (x * moveSpeed);
+            newVelocity += transform.up * (z * moveSpeed);
+        }
 
         // Apply velocity
         rb.velocity = newVelocity;
@@ -317,6 +367,7 @@ public class Player_Script : MonoBehaviour
             (currentMoveState == MovementState.CLIMBING && currentStatePhase == StatePhase.START))
         {
             // Setup for actions
+            actionStarted = true;
             actionOrigin = transform.position;
             collider.enabled = false;
         }

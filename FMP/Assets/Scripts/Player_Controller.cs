@@ -193,7 +193,24 @@ public class Player_Controller : MonoBehaviour
                                         Input.GetAxis("Vertical"));
                 }
                 break;
-                
+
+            case MovementState.CLIMBING:
+                if (playerScript.GetStatePhase() == StatePhase.END)
+                {
+                    // Player on ground
+                    if (playerScript.CanJump())
+                        playerScript.SetMovementState(MovementState.STANDING);
+
+                    // Player jumps
+                    else if (   Input.GetButtonDown("Jump"))
+                                playerScript.Jump();
+
+                    // Player moves
+                    else playerScript.Move( Input.GetAxis("Horizontal"),
+                                            Input.GetAxis("Vertical"));
+                }
+                break;
+
             default:
                 break;
         }
@@ -204,26 +221,21 @@ public class Player_Controller : MonoBehaviour
         {
             playerScript.SetMovementState(MovementState.VAULTING);
         }
-        if (Input.GetKeyUp("1"))
-            playerScript.SetMovementState(MovementState.STANDING);
+
         if (Input.GetKeyDown("2"))
         {
             playerScript.SetMovementState(MovementState.SLIDING);
         }
-        if (Input.GetKeyUp("2"))
-            playerScript.SetMovementState(MovementState.STANDING);
+
         if (Input.GetKeyDown("3"))
         {
             playerScript.SetMovementState(MovementState.MANTLING);
         }
-        if (Input.GetKeyUp("3"))
-            playerScript.SetMovementState(MovementState.STANDING);
+
         if (Input.GetKeyDown("4"))
         {
             playerScript.SetMovementState(MovementState.CLIMBING);
         }
-        if (Input.GetKeyUp("4"))
-            playerScript.SetMovementState(MovementState.STANDING);
     }
 
     /////////////////////////////////////////////////////////////////
