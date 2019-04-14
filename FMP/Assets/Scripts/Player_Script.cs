@@ -31,6 +31,7 @@ public class Player_Script : MonoBehaviour
     private MovementState       currentMoveState;
     private StatePhase          currentStatePhase;
     private Vector3             actionOrigin;
+    private Animation           playerAnimation;
 
     /////////////////////////////////////////////////////////////////
 
@@ -54,6 +55,7 @@ public class Player_Script : MonoBehaviour
                                 climbDuration,
                                 climbSetupDuration;
     public Camera               camera;
+    public GameObject           body;
 
     /////////////////////////////////////////////////////////////////
     // Runs on start up
@@ -63,6 +65,8 @@ public class Player_Script : MonoBehaviour
         // Set objects
         rb = gameObject.GetComponent<Rigidbody>();
         collider = gameObject.GetComponent<CapsuleCollider>();
+        playerAnimation = body.GetComponent<Animation>();
+
 
         // Set dimensions
         crouchHeight = collider.height / 2;
@@ -74,6 +78,8 @@ public class Player_Script : MonoBehaviour
 
         // Set default values
         actionStarted = false;
+        currentMoveState = MovementState.STANDING;
+        UpdateAnimation();
     }
 
     /////////////////////////////////////////////////////////////////
@@ -81,7 +87,6 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        Debug.Log(currentActionTimer + " " + currentStatePhase);
         // reset action started
         if (actionStarted)
             actionStarted = false;
@@ -89,7 +94,6 @@ public class Player_Script : MonoBehaviour
         switch (currentMoveState)
         {
             case MovementState.VAULTING:
-                Debug.Log(currentStatePhase);
                 switch (currentStatePhase)
                 {
                     case StatePhase.START:
@@ -259,6 +263,59 @@ public class Player_Script : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
+    // Updates animation
+    /////////////////////////////////////////////////////////////////
+    private void UpdateAnimation()
+    {
+        switch (currentMoveState)
+        {
+            case MovementState.STANDING:
+                playerAnimation.Play("Standing");
+                break;
+
+            case MovementState.CROUCHING:
+                playerAnimation.Play("Crouching");
+                break;
+
+            case MovementState.SNEAKING:
+                playerAnimation.Play("Sneaking");
+                break;
+
+            case MovementState.WALKING:
+                playerAnimation.Play("Walking");
+                break;
+
+            case MovementState.RUNNING:
+                playerAnimation.Play("Running");
+                break;
+
+            case MovementState.JUMPING:
+                playerAnimation.Play("Jumping");
+                break;
+
+            case MovementState.FALLING:
+                playerAnimation.Play("Falling");
+                break;
+
+            case MovementState.VAULTING:
+                playerAnimation.Play("Vaulting");
+                break;
+
+            case MovementState.SLIDING:
+                playerAnimation.Play("Sliding");
+                break;
+
+            case MovementState.MANTLING:
+                playerAnimation.Play("Mantling");
+                break;
+            
+            default:
+                playerAnimation.Play("Climbing");
+                break;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
     // Sets all action bools to false
     /////////////////////////////////////////////////////////////////
     internal void ResetActions()
@@ -372,6 +429,9 @@ public class Player_Script : MonoBehaviour
             collider.enabled = false;
         }
         else collider.enabled = true;
+
+        // Update animation
+        UpdateAnimation();
     }
 
     /////////////////////////////////////////////////////////////////

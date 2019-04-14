@@ -133,7 +133,8 @@ public class Player_Controller : MonoBehaviour
                     playerScript.Jump();
 
                 // Player runs
-                else if (Input.GetButton("Sprint"))
+                else if (   Input.GetButton("Sprint") ||
+                            Input.GetAxis("Sprint") == 1)
                     playerScript.SetMovementState(MovementState.RUNNING);
 
                 // Player stops moving
@@ -162,7 +163,8 @@ public class Player_Controller : MonoBehaviour
                     playerScript.Jump();
 
                 // Player runs
-                else if (!Input.GetButton("Sprint"))
+                else if (   !Input.GetButton("Sprint") &&
+                            Input.GetAxis("Sprint") != 1)
                     playerScript.SetMovementState(MovementState.WALKING);
 
                 // Player stops moving
@@ -245,7 +247,7 @@ public class Player_Controller : MonoBehaviour
     {
         // Move camera
         currentXCam += (x * cameraSpeed * Time.deltaTime);
-        currentYCam += -(y * cameraSpeed * Time.deltaTime);
+        currentYCam += (y * cameraSpeed * Time.deltaTime);
 
         // Keep y angle with minimum and maximum ranges
         if (currentYCam < maximumCameraAngle)
@@ -275,13 +277,14 @@ public class Player_Controller : MonoBehaviour
         Vector3 direction = Camera.main.transform.position - transform.position;
 
         // Raycast from player to camera
-        RaycastHit[] hits = Physics.RaycastAll(transform.position, direction);
+        RaycastHit[] hits = Physics.RaycastAll(transform.position, direction.normalized);
 
         // If ray hits an obstruction
         for (int i = 0; i < hits.Length; i++)
         {
             if (hits[i].collider.tag != "MainCamera" &&
-                hits[i].collider.tag != "Player")
+                hits[i].collider.tag != "Player" &&
+                hits[i].distance < cameraDistance)
             {
                 // Move camera to point of obstruction
                 playerScript.camera.transform.position = hits[i].point;

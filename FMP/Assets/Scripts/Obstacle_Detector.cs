@@ -307,7 +307,7 @@ public class Obstacle_Detector : MonoBehaviour
             case MovementState.SLIDING:
                 // Set start point
                 playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
-                playerScript.startActionPoint.y = playerObject.transform.position.y - (crouchingHeight / 2);
+                playerScript.startActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
                                 actionColour,
