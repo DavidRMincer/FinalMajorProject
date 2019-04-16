@@ -920,17 +920,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 300
+  walkAnimSpeedMultiplier: 2
   runSpeed: 600
+  runAnimSpeedMultiplier: 2
   sneakSpeed: 150
+  sneakAnimSpeedMultiplier: 1
   jumpForce: 400
-  vaultDuration: 1
-  vaultSetupDuration: 0.2
-  slideDuration: 1
-  slideSetupDuration: 0.2
-  mantleDuration: 1
+  jumpAnimSpeedMultiplier: 1
+  vaultDuration: 0.5
+  vaultSetupDuration: 0.1
+  vaultAnimSpeedMultiplier: 2
+  slideDuration: 0.5
+  slideSetupDuration: 0.1
+  slideAnimSpeedMultiplier: 1
+  mantleDuration: 0.5
   mantleSetupDuration: 0.2
+  mantleAnimSpeedMultiplier: 2
   climbDuration: 0.5
-  climbSetupDuration: 0.2
+  climbSetupDuration: 0.1
+  climbAnimSpeedMultiplier: 2
   camera: {fileID: 282840813}
   body: {fileID: 103198787}
 --- !u!114 &1801999041

@@ -71,9 +71,15 @@ public class Obstacle_Detector : MonoBehaviour
             // Set hit point
             hitPoint = obstacle.GetComponent<Collider>().ClosestPoint(playerObject.transform.position);
 
-            // Face obstacle while climbing
             if (playerScript.GetMovementState() == MovementState.CLIMBING)
+            {
+                // Face obstacle while climbing
                 playerObject.transform.LookAt(hitPoint);
+
+                // Mantle after climbing
+                if (playerObject.transform.position.y >= (GetTopEdge(obstacle).y - crouchingHeight))
+                    playerScript.SetMovementState(MovementState.MANTLING);
+            }
 
             // Measure obstacle dimensions
             ObstacleCheck(obstacle);
@@ -114,11 +120,13 @@ public class Obstacle_Detector : MonoBehaviour
             if (rayArray[i].collider.tag != "Player" &&
                 rayArray[i].collider.tag != "MainCamera")
             {
+                Debug.Log(true);
                 // Return hit
                 return rayArray[i];
             }
         }
 
+        Debug.Log(false);
         // Return first hit
         return new RaycastHit();
     }
@@ -146,25 +154,25 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     // Returns depth of closest section of obstacle
     /////////////////////////////////////////////////////////////////
-    private float GetDepth(GameObject obj)
+    private float GetDepth()
     {
-        float depth;
+        float depth = 0.0f;
 
         // Sets depth as longest size axis
-        if (obj.GetComponent<Collider>().bounds.size.z > obstacle.GetComponent<Collider>().bounds.size.x)
-            depth = obj.GetComponent<Collider>().bounds.size.z;
+        if (obstacle.GetComponent<Collider>().bounds.size.z > obstacle.GetComponent<Collider>().bounds.size.x)
+            depth = obstacle.GetComponent<Collider>().bounds.size.z;
         else
-            depth = obj.GetComponent<Collider>().bounds.size.x;
+            depth = obstacle.GetComponent<Collider>().bounds.size.x;
 
         // Add extra onto depth for sake of raycasting
         ++depth;
 
         // Get depth
-        mainRay = Physics.RaycastAll(hitPoint + (transform.forward * depth),
-                                    -transform.forward,
+        mainRay = Physics.RaycastAll(hitPoint + ((hitPoint - playerObject.transform.position).normalized * depth),
+                                    -(hitPoint - playerObject.transform.position).normalized,
                                     depth);
 
-        if (GetFirstHit(mainRay).collider.gameObject == obj)
+        if (GetFirstHit(mainRay).collider.gameObject == obstacle)
             depth = (GetFirstHit(mainRay).point - hitPoint).magnitude;
         Debug.DrawRay(hitPoint, transform.forward * depth, debugColour, 0.01f);
 
@@ -226,10 +234,10 @@ public class Obstacle_Detector : MonoBehaviour
                     depth;
         
         // Get depth of mesh
-        depth = GetDepth(obstacle);
+        depth = GetDepth();
 
         // Get height from ground
-        obstacleBot += (transform.forward * GetDepth(obstacle) / 2);
+        obstacleBot += (transform.forward * GetDepth() / 2);
         mainRay = Physics.RaycastAll(obstacleBot, -Vector3.up, detectorLength);
         obstacleBot = GetFirstHit(mainRay).point;
         mainRay = Physics.RaycastAll(obstacleBot, Vector3.up, detectorLength);
@@ -238,9 +246,9 @@ public class Obstacle_Detector : MonoBehaviour
         botHeight = GetFirstHit(mainRay).distance;
 
         // Get height of top of obstacle from ground
-        Physics.Raycast(GetTopEdge(obstacle), -Vector3.up, out actionRay);
-        topHeight = actionRay.distance;
-        Debug.DrawRay(GetTopEdge(obstacle), -Vector3.up * topHeight, debugColour, 0.01f);
+        mainRay = Physics.RaycastAll(GetTopEdge(obstacle), -Vector3.up, obstacle.GetComponent<Collider>().bounds.size.y + detectorLength);
+        topHeight = GetFirstHit(mainRay).distance;
+        Debug.DrawRay(GetTopEdge(obstacle), -Vector3.up * topHeight, Color.red, 0.01f);
         
         // Get space above obstacle
         Physics.Raycast(GetTopEdge(obstacle) + (transform.forward * depth / 2),
@@ -288,7 +296,7 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.vaultDuration);
 
                 // Set middle point
-                playerScript.middleActionPoint = hitPoint + (playerObject.transform.forward * (GetDepth(obstacle) / 2));
+                playerScript.middleActionPoint = hitPoint + (playerObject.transform.forward * (GetDepth() / 2));
                 playerScript.middleActionPoint.y = GetTopEdge(obstacle).y + (crouchingHeight / 2);
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.middleActionPoint - playerScript.startActionPoint,
@@ -296,7 +304,7 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.vaultDuration);
 
                 // Set end point
-                playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth(obstacle)) + (playerObject.transform.forward * (playerWidth / 2));
+                playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth()) + (playerObject.transform.forward * (playerWidth / 2));
                 playerScript.endActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerScript.middleActionPoint,
                                 playerScript.endActionPoint - playerScript.middleActionPoint,
@@ -314,7 +322,7 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.slideDuration);
 
                 // Set end point
-                playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerWidth + GetDepth(obstacle)));
+                playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerWidth + GetDepth()));
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.endActionPoint - playerScript.startActionPoint,
                                 actionColour,

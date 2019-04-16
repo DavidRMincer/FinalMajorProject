@@ -43,17 +43,25 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
 
     public float                walkSpeed,
+                                walkAnimSpeedMultiplier,
                                 runSpeed,
+                                runAnimSpeedMultiplier,
                                 sneakSpeed,
+                                sneakAnimSpeedMultiplier,
                                 jumpForce,
+                                jumpAnimSpeedMultiplier,
                                 vaultDuration,
                                 vaultSetupDuration,
+                                vaultAnimSpeedMultiplier,
                                 slideDuration,
                                 slideSetupDuration,
+                                slideAnimSpeedMultiplier,
                                 mantleDuration,
                                 mantleSetupDuration,
+                                mantleAnimSpeedMultiplier,
                                 climbDuration,
-                                climbSetupDuration;
+                                climbSetupDuration,
+                                climbAnimSpeedMultiplier;
     public Camera               camera;
     public GameObject           body;
 
@@ -79,6 +87,18 @@ public class Player_Script : MonoBehaviour
         // Set default values
         actionStarted = false;
         currentMoveState = MovementState.STANDING;
+
+        // Multiply animation speeds
+        playerAnimation["Walking"].speed *= walkAnimSpeedMultiplier;
+        playerAnimation["Running"].speed *= runAnimSpeedMultiplier;
+        playerAnimation["Jumping"].speed *= jumpAnimSpeedMultiplier;
+        playerAnimation["Walking"].speed *= runAnimSpeedMultiplier;
+        playerAnimation["Sneaking"].speed *= sneakAnimSpeedMultiplier;
+        playerAnimation["Vaulting"].speed *= vaultAnimSpeedMultiplier;
+        playerAnimation["Sliding"].speed *= slideAnimSpeedMultiplier;
+        playerAnimation["Mantling"].speed *= mantleAnimSpeedMultiplier;
+        playerAnimation["Climbing"].speed *= climbAnimSpeedMultiplier;
+
         UpdateAnimation();
     }
 
@@ -257,6 +277,18 @@ public class Player_Script : MonoBehaviour
                         break;
                 }
                 break;
+
+            case MovementState.JUMPING:
+            case MovementState.FALLING:
+                // Select action while jumping
+                if (canClimb)
+                    SetMovementState(MovementState.CLIMBING);
+                else if (canMantle)
+                    SetMovementState(MovementState.MANTLING);
+                else if (canVault)
+                    SetMovementState(MovementState.VAULTING);
+                break;
+
             default:
                 break;
         }
