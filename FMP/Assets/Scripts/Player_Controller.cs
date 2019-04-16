@@ -63,7 +63,7 @@ public class Player_Controller : MonoBehaviour
         switch (playerScript.GetMovementState())
         {
             case MovementState.STANDING:
-
+                
                 // Player falls
                 if (!playerScript.CanJump())
                     playerScript.SetMovementState(MovementState.FALLING);
@@ -204,8 +204,8 @@ public class Player_Controller : MonoBehaviour
                         playerScript.SetMovementState(MovementState.STANDING);
 
                     // Player jumps
-                    else if (   Input.GetButtonDown("Jump"))
-                                playerScript.Jump();
+                    else if (Input.GetButtonDown("Jump"))
+                        playerScript.Jump();
 
                     // Player moves
                     else playerScript.Move( Input.GetAxis("Horizontal"),

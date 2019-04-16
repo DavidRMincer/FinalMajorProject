@@ -4,10 +4,7 @@ using UnityEngine;
 
 public class Obstacle_Detector : MonoBehaviour
 {
-    private float           standingHeight,
-                            crouchingHeight,
-                            jumpHeight,
-                            playerWidth;
+    private float           detectorLength;
     private RaycastHit[]    mainRay;
     private GameObject      obstacle;
     private Vector3         hitPoint;
@@ -16,7 +13,6 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
 
     public GameObject       playerObject;
-    public float            detectorLength;
     public Color            debugColour,
                             actionColour;
 
@@ -25,7 +21,9 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void Start()
     {
-        SetDimensions();
+        // Set detector length
+        detectorLength = GetComponent<Collider>().bounds.size.z;
+        
         playerScript = playerObject.GetComponent<Player_Script>();
     }
 
@@ -77,7 +75,7 @@ public class Obstacle_Detector : MonoBehaviour
                 playerObject.transform.LookAt(hitPoint);
 
                 // Mantle after climbing
-                if (playerObject.transform.position.y >= (GetTopEdge(obstacle).y - crouchingHeight))
+                if (playerObject.transform.position.y >= (GetTopEdge(obstacle).y - playerScript.GetCrouchHeight()))
                     playerScript.SetMovementState(MovementState.MANTLING);
             }
 
@@ -89,25 +87,7 @@ public class Obstacle_Detector : MonoBehaviour
                 SetActionPoints();
         }
     }
-
-    /////////////////////////////////////////////////////////////////
-    // Sets dimensions from player and detector box dimensions
-    /////////////////////////////////////////////////////////////////
-    private void SetDimensions()
-    {
-        // Set standing height as player height
-        standingHeight = playerObject.GetComponent<Collider>().bounds.size.y;
-        // Set crouching height as half player height
-        crouchingHeight = standingHeight / 2;
-        // Set player width as player width
-        playerWidth = playerObject.GetComponent<Collider>().bounds.size.z;
-        // Set jump height
-        jumpHeight = standingHeight * 2;
-
-        // Set detector length
-        detectorLength = GetComponent<Collider>().bounds.size.z;
-    }
-
+    
     /////////////////////////////////////////////////////////////////
     // Returns first collider hit by main ray
     /////////////////////////////////////////////////////////////////
@@ -120,13 +100,11 @@ public class Obstacle_Detector : MonoBehaviour
             if (rayArray[i].collider.tag != "Player" &&
                 rayArray[i].collider.tag != "MainCamera")
             {
-                Debug.Log(true);
                 // Return hit
                 return rayArray[i];
             }
         }
-
-        Debug.Log(false);
+        
         // Return first hit
         return new RaycastHit();
     }
@@ -171,9 +149,10 @@ public class Obstacle_Detector : MonoBehaviour
         mainRay = Physics.RaycastAll(hitPoint + ((hitPoint - playerObject.transform.position).normalized * depth),
                                     -(hitPoint - playerObject.transform.position).normalized,
                                     depth);
+        Debug.DrawLine(hitPoint + ((hitPoint - playerObject.transform.position).normalized * depth), -(hitPoint - playerObject.transform.position).normalized * depth, Color.red, 0.01f);
 
-        if (GetFirstHit(mainRay).collider.gameObject == obstacle)
-            depth = (GetFirstHit(mainRay).point - hitPoint).magnitude;
+        // Set depth
+        depth = (GetTargetHit(mainRay, obstacle).point - hitPoint).magnitude;
         Debug.DrawRay(hitPoint, transform.forward * depth, debugColour, 0.01f);
 
         return depth;
@@ -237,58 +216,61 @@ public class Obstacle_Detector : MonoBehaviour
         depth = GetDepth();
 
         // Get height from ground
-        obstacleBot += (transform.forward * GetDepth() / 2);
+        obstacleBot += (transform.forward * depth / 2);
         mainRay = Physics.RaycastAll(obstacleBot, -Vector3.up, detectorLength);
         obstacleBot = GetFirstHit(mainRay).point;
         mainRay = Physics.RaycastAll(obstacleBot, Vector3.up, detectorLength);
-        Debug.DrawLine(obstacleBot, GetFirstHit(mainRay).point, debugColour, 0.01f);
+        Debug.DrawLine(obstacleBot, GetFirstHit(mainRay).point, debugColour, 0.001f);
         obstacleBot = GetFirstHit(mainRay).point;
         botHeight = GetFirstHit(mainRay).distance;
 
         // Get height of top of obstacle from ground
         mainRay = Physics.RaycastAll(GetTopEdge(obstacle), -Vector3.up, obstacle.GetComponent<Collider>().bounds.size.y + detectorLength);
         topHeight = GetFirstHit(mainRay).distance;
-        Debug.DrawRay(GetTopEdge(obstacle), -Vector3.up * topHeight, Color.red, 0.01f);
-        
+        Debug.DrawRay(GetTopEdge(obstacle), -Vector3.up * topHeight, debugColour, 0.001f);
+
         // Get space above obstacle
         Physics.Raycast(GetTopEdge(obstacle) + (transform.forward * depth / 2),
                         Vector3.up,
                         out actionRay);
         if (actionRay.collider == null)
-            space = jumpHeight;
+            space = playerScript.GetJumpHeight();
         else
             space = actionRay.distance;
 
-        Debug.DrawRay(GetTopEdge(obstacle) + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.01f);
+        Debug.DrawRay(GetTopEdge(obstacle) + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.001f);
 
         // Can slide
-        playerScript.SetCanSlide(   botHeight > crouchingHeight);
+        playerScript.SetCanSlide(   botHeight > playerScript.GetCrouchHeight() &&
+                                    depth < playerScript.GetStandHeight());
 
         // Can vault
-        playerScript.SetCanVault(   topHeight >= crouchingHeight &&
-                                    space > crouchingHeight &&
-                                    depth < playerWidth);
+        playerScript.SetCanVault(   topHeight >= playerScript.GetCrouchHeight() &&
+                                    topHeight <= playerScript.GetStandHeight() &&
+                                    space >= playerScript.GetCrouchHeight() &&
+                                    depth < playerScript.GetWidth());
 
         // Can mantle
-        playerScript.SetCanMantle(  topHeight <= jumpHeight &&
-                                    space > crouchingHeight &&
-                                    depth >= playerWidth);
+        playerScript.SetCanMantle(  topHeight >= playerScript.GetCrouchHeight() &&
+                                    topHeight <= playerScript.GetJumpHeight() &&
+                                    space > playerScript.GetCrouchHeight() &&
+                                    depth >= playerScript.GetWidth());
 
         // Can climb
-        playerScript.SetCanClimb(   topHeight > jumpHeight &&
-                                    botHeight < standingHeight);
+        playerScript.SetCanClimb(   topHeight > playerScript.GetJumpHeight() &&
+                                    botHeight < playerScript.GetStandHeight());
     }
-
+    
     /////////////////////////////////////////////////////////////////
     // Sets action points based on action
     /////////////////////////////////////////////////////////////////
-    public void SetActionPoints()
+    private void SetActionPoints()
     {
         switch (playerScript.GetMovementState())
         {
             case MovementState.VAULTING:
                 // Set start point
-                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerScript.GetWidth() / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
@@ -297,14 +279,14 @@ public class Obstacle_Detector : MonoBehaviour
 
                 // Set middle point
                 playerScript.middleActionPoint = hitPoint + (playerObject.transform.forward * (GetDepth() / 2));
-                playerScript.middleActionPoint.y = GetTopEdge(obstacle).y + (crouchingHeight / 2);
+                playerScript.middleActionPoint.y = GetTopEdge(obstacle).y + (playerScript.GetCrouchHeight() / 2);
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.middleActionPoint - playerScript.startActionPoint,
                                 actionColour,
                                 playerScript.vaultDuration);
 
                 // Set end point
-                playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth()) + (playerObject.transform.forward * (playerWidth / 2));
+                playerScript.endActionPoint = hitPoint + (playerObject.transform.forward * GetDepth()) + (playerObject.transform.forward * (playerScript.GetWidth() / 2));
                 playerScript.endActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerScript.middleActionPoint,
                                 playerScript.endActionPoint - playerScript.middleActionPoint,
@@ -314,7 +296,7 @@ public class Obstacle_Detector : MonoBehaviour
 
             case MovementState.SLIDING:
                 // Set start point
-                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerScript.GetWidth() / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
@@ -322,7 +304,7 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.slideDuration);
 
                 // Set end point
-                playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerWidth + GetDepth()));
+                playerScript.endActionPoint = playerScript.startActionPoint + (playerObject.transform.forward * (playerScript.GetWidth() + GetDepth()));
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.endActionPoint - playerScript.startActionPoint,
                                 actionColour,
@@ -331,7 +313,7 @@ public class Obstacle_Detector : MonoBehaviour
 
             case MovementState.MANTLING:
                 // Set start point
-                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerScript.GetWidth() / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
@@ -339,16 +321,16 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.mantleDuration);
 
                 // Set middle point
-                playerScript.middleActionPoint = GetTopEdge(obstacle) + (-playerObject.transform.forward * (playerWidth / 2));
-                playerScript.middleActionPoint -= Vector3.up * (crouchingHeight / 2);
+                playerScript.middleActionPoint = GetTopEdge(obstacle) + (-playerObject.transform.forward * (playerScript.GetWidth() / 2));
+                playerScript.middleActionPoint -= Vector3.up * (playerScript.GetCrouchHeight() / 2);
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.middleActionPoint - playerScript.startActionPoint,
                                 actionColour,
                                 playerScript.mantleDuration);
 
                 // Set end point
-                playerScript.endActionPoint = GetTopEdge(obstacle) + (playerObject.transform.forward * (playerWidth / 2));
-                playerScript.endActionPoint += Vector3.up * (crouchingHeight / 2);
+                playerScript.endActionPoint = GetTopEdge(obstacle) + (playerObject.transform.forward * (playerScript.GetWidth() / 2));
+                playerScript.endActionPoint += Vector3.up * (playerScript.GetCrouchHeight() / 2);
                 Debug.DrawRay(playerScript.middleActionPoint,
                                 playerScript.endActionPoint - playerScript.middleActionPoint,
                                 actionColour,
@@ -357,7 +339,7 @@ public class Obstacle_Detector : MonoBehaviour
 
             case MovementState.CLIMBING:
                 // Set start point
-                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerWidth / 2));
+                playerScript.startActionPoint = hitPoint + (-playerObject.transform.forward * (playerScript.GetWidth() / 2));
                 playerScript.startActionPoint.y = playerObject.transform.position.y;
                 Debug.DrawRay(playerObject.transform.position,
                                 playerScript.startActionPoint - playerObject.transform.position,
@@ -365,7 +347,7 @@ public class Obstacle_Detector : MonoBehaviour
                                 playerScript.slideDuration);
 
                 // Set end point
-                playerScript.endActionPoint = playerScript.startActionPoint + (Vector3.up * standingHeight);
+                playerScript.endActionPoint = playerScript.startActionPoint + (Vector3.up * playerScript.GetStandHeight());
                 Debug.DrawRay(playerScript.startActionPoint,
                                 playerScript.endActionPoint - playerScript.startActionPoint,
                                 actionColour,

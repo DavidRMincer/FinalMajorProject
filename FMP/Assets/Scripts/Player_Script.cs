@@ -17,6 +17,7 @@ public class Player_Script : MonoBehaviour
 {
 
     private float               currentSpeed,
+                                standHeight,
                                 crouchHeight,
                                 jumpHeight,
                                 vaultMidDuration,
@@ -28,7 +29,8 @@ public class Player_Script : MonoBehaviour
                                 canClimb,
                                 actionStarted;
     private Rigidbody           rb;
-    private MovementState       currentMoveState;
+    private MovementState       currentMoveState,
+                                previousMoveState;
     private StatePhase          currentStatePhase;
     private Vector3             actionOrigin;
     private Animation           playerAnimation;
@@ -38,7 +40,6 @@ public class Player_Script : MonoBehaviour
     internal Vector3            startActionPoint,
                                 middleActionPoint,
                                 endActionPoint;
-    internal CapsuleCollider    collider;
 
     /////////////////////////////////////////////////////////////////
 
@@ -64,6 +65,7 @@ public class Player_Script : MonoBehaviour
                                 climbAnimSpeedMultiplier;
     public Camera               camera;
     public GameObject           body;
+    public CapsuleCollider      collider;
 
     /////////////////////////////////////////////////////////////////
     // Runs on start up
@@ -72,13 +74,13 @@ public class Player_Script : MonoBehaviour
     {
         // Set objects
         rb = gameObject.GetComponent<Rigidbody>();
-        collider = gameObject.GetComponent<CapsuleCollider>();
         playerAnimation = body.GetComponent<Animation>();
 
 
         // Set dimensions
-        crouchHeight = collider.height / 2;
-        jumpHeight = collider.height * 2;
+        standHeight = collider.height;
+        crouchHeight = standHeight / 2;
+        jumpHeight = standHeight * 2;
 
         // Set action mid duration points
         vaultMidDuration = ((vaultDuration - vaultSetupDuration) / 2) + vaultSetupDuration;
@@ -107,6 +109,7 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
+        Debug.Log(currentMoveState);
         // reset action started
         if (actionStarted)
             actionStarted = false;
@@ -285,12 +288,31 @@ public class Player_Script : MonoBehaviour
                     SetMovementState(MovementState.CLIMBING);
                 else if (canMantle)
                     SetMovementState(MovementState.MANTLING);
-                else if (canVault)
+                else if (   canVault &&
+                            previousMoveState == MovementState.RUNNING)
                     SetMovementState(MovementState.VAULTING);
                 break;
 
             default:
                 break;
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Updates each frame
+    /////////////////////////////////////////////////////////////////
+    private void LateUpdate()
+    {
+        // Update climbing animations
+        if (currentMoveState == MovementState.CLIMBING)
+        {
+            // Pause if not moving
+            if (Input.GetAxis("Horizontal") == 0.0f &&
+                Input.GetAxis("Vertical") == 0.0f)
+                playerAnimation["Climbing"].speed = 0.0f;
+            // Play if climbing
+            else
+                playerAnimation["Climbing"].speed = climbAnimSpeedMultiplier;
         }
     }
 
@@ -363,7 +385,6 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     internal bool CanJump()
     {
-        // Returns true if raycast collides with ground
         return Physics.Raycast(transform.position, -Vector3.up, (collider.height / 2) + 0.1f);
     }
 
@@ -420,7 +441,8 @@ public class Player_Script : MonoBehaviour
         // If jump inputted and player grounded
         if (CanJump())
         {
-            if (CanVault())
+            if (CanVault() &&
+                previousMoveState == MovementState.RUNNING)
             {
                 SetMovementState(MovementState.VAULTING);
             }
@@ -445,10 +467,19 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     public void SetMovementState(MovementState state)
     {
+        // Set previous move state
+        if (state != MovementState.FALLING)
+            previousMoveState = currentMoveState;
+
         // Set movement state as state
         currentMoveState = state;
         // Set current state to start
         currentStatePhase = StatePhase.START;
+
+        // Stop player from standing if can't stand
+        if (currentMoveState == MovementState.STANDING &&
+            !CanStand())
+            currentMoveState = MovementState.CROUCHING;
 
         if (currentMoveState == MovementState.VAULTING ||
             currentMoveState == MovementState.SLIDING ||
@@ -461,6 +492,19 @@ public class Player_Script : MonoBehaviour
             collider.enabled = false;
         }
         else collider.enabled = true;
+
+        // Set collider height
+        if (currentMoveState == MovementState.CROUCHING ||
+            currentMoveState == MovementState.SNEAKING)
+        {
+            collider.height = crouchHeight;
+            collider.transform.position = transform.position - (Vector3.up * crouchHeight * 0.51f);
+        }
+        else
+        {
+            collider.height = standHeight;
+            collider.transform.position = transform.position;
+        }
 
         // Update animation
         UpdateAnimation();
@@ -480,6 +524,38 @@ public class Player_Script : MonoBehaviour
     public StatePhase GetStatePhase()
     {
         return currentStatePhase;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns stand height
+    /////////////////////////////////////////////////////////////////
+    public float GetStandHeight()
+    {
+        return standHeight;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns crouch height
+    /////////////////////////////////////////////////////////////////
+    public float GetCrouchHeight()
+    {
+        return crouchHeight;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns crouch height
+    /////////////////////////////////////////////////////////////////
+    public float GetJumpHeight()
+    {
+        return jumpHeight;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns width
+    /////////////////////////////////////////////////////////////////
+    public float GetWidth()
+    {
+        return collider.radius * 2;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -512,6 +588,27 @@ public class Player_Script : MonoBehaviour
     public bool CanSlide()
     {
         return canSlide;
+    }
+
+    /////////////////////////////////////////////////////////////////
+    // Returns true if space to stand up
+    /////////////////////////////////////////////////////////////////
+    public bool CanStand()
+    {
+        float space = jumpHeight;
+        RaycastHit[] ray = Physics.RaycastAll(  transform.position - (Vector3.up * collider.bounds.extents.y),
+                                                Vector3.up * jumpHeight);
+
+        for (int i = 0; i < ray.Length; ++i)
+        {
+            if (ray[i].collider.tag != "Player" &&
+                ray[i].collider.tag != "Camera")
+            {
+                space = ray[i].distance;
+            }
+        }
+
+        return space >= standHeight;
     }
 
     /////////////////////////////////////////////////////////////////
