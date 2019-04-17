@@ -29,8 +29,7 @@ public class Player_Script : MonoBehaviour
                                 canClimb,
                                 actionStarted;
     private Rigidbody           rb;
-    private MovementState       currentMoveState,
-                                previousMoveState;
+    private MovementState       currentMoveState;
     private StatePhase          currentStatePhase;
     private Vector3             actionOrigin;
     private Animation           playerAnimation;
@@ -61,7 +60,6 @@ public class Player_Script : MonoBehaviour
                                 mantleSetupDuration,
                                 mantleAnimSpeedMultiplier,
                                 climbDuration,
-                                climbSetupDuration,
                                 climbAnimSpeedMultiplier;
     public Camera               camera;
     public GameObject           body;
@@ -109,7 +107,6 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        Debug.Log(currentMoveState);
         // reset action started
         if (actionStarted)
             actionStarted = false;
@@ -246,37 +243,25 @@ public class Player_Script : MonoBehaviour
                 break;
 
             case MovementState.CLIMBING:
+                // Set current speed
+                currentSpeed = sneakSpeed;
+
                 switch (currentStatePhase)
                 {
                     case StatePhase.START:
-                        if (currentActionTimer < climbSetupDuration)
-                        {
-                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbSetupDuration);
-                            currentActionTimer += Time.deltaTime;
-                        }
-                        else
-                        {
-                            currentStatePhase = StatePhase.MIDDLE;
-                        }
-                        break;
-
-                    case StatePhase.MIDDLE:
                         if (currentActionTimer < climbDuration)
                         {
-                            transform.position = Vector3.Lerp(startActionPoint, endActionPoint, (currentActionTimer - climbSetupDuration) / (climbDuration - climbSetupDuration));
+                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbDuration);
                             currentActionTimer += Time.deltaTime;
                         }
                         else
                         {
                             currentStatePhase = StatePhase.END;
-                            collider.enabled = true;
                             currentActionTimer = 0.0f;
                         }
                         break;
 
                     default:
-                        // Set current speed
-                        currentSpeed = sneakSpeed;
                         break;
                 }
                 break;
@@ -288,8 +273,7 @@ public class Player_Script : MonoBehaviour
                     SetMovementState(MovementState.CLIMBING);
                 else if (canMantle)
                     SetMovementState(MovementState.MANTLING);
-                else if (   canVault &&
-                            previousMoveState == MovementState.RUNNING)
+                else if (canVault)
                     SetMovementState(MovementState.VAULTING);
                 break;
 
@@ -441,8 +425,7 @@ public class Player_Script : MonoBehaviour
         // If jump inputted and player grounded
         if (CanJump())
         {
-            if (CanVault() &&
-                previousMoveState == MovementState.RUNNING)
+            if (CanVault())
             {
                 SetMovementState(MovementState.VAULTING);
             }
@@ -467,14 +450,16 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     public void SetMovementState(MovementState state)
     {
-        // Set previous move state
-        if (state != MovementState.FALLING)
-            previousMoveState = currentMoveState;
-
         // Set movement state as state
         currentMoveState = state;
         // Set current state to start
         currentStatePhase = StatePhase.START;
+
+        // Set gravity
+        if (currentMoveState == MovementState.CLIMBING)
+            GetComponent<Rigidbody>().useGravity = false;
+        else
+            GetComponent<Rigidbody>().useGravity = true;
 
         // Stop player from standing if can't stand
         if (currentMoveState == MovementState.STANDING &&

@@ -262,6 +262,10 @@ public class Player_Controller : MonoBehaviour
     public void UpdateCamera()
     {
         // Calculate camera position
+        RaycastHit[]    topRay,
+                        midRay,
+                        botRay;
+        bool obstructed = false;
         Vector3 distVec = new Vector3(0, 0, cameraDistance);
         Quaternion camRotation = Quaternion.Euler(currentYCam, currentXCam, 0);
 
@@ -273,22 +277,70 @@ public class Player_Controller : MonoBehaviour
 
         // OBSTRUCTION DETECTION
 
-        // Calculate ray direction
-        Vector3 direction = Camera.main.transform.position - transform.position;
-
-        // Raycast from player to camera
-        RaycastHit[] hits = Physics.RaycastAll(transform.position, direction.normalized);
-
-        // If ray hits an obstruction
-        for (int i = 0; i < hits.Length; i++)
+        // Does not check during action
+        if (playerScript.GetMovementState() != MovementState.VAULTING &&
+            playerScript.GetMovementState() != MovementState.SLIDING &&
+            playerScript.GetMovementState() != MovementState.MANTLING)
         {
-            if (hits[i].collider.tag != "MainCamera" &&
-                hits[i].collider.tag != "Player" &&
-                hits[i].distance < cameraDistance)
+            // From stomach
+
+            // Raycast from player to camera
+            midRay = Physics.RaycastAll(transform.position, (Camera.main.transform.position - transform.position).normalized);
+
+            // If ray hits an obstruction
+            for (int i = 0; i < midRay.Length; i++)
             {
-                // Move camera to point of obstruction
-                playerScript.camera.transform.position = hits[i].point;
-                i = hits.Length;
+                if (midRay[i].collider.tag != "MainCamera" &&
+                    midRay[i].collider.tag != "Player" &&
+                    midRay[i].distance < cameraDistance)
+                {
+                    // OBSTRUCTED
+                    obstructed = true;
+                    i = midRay.Length;
+                }
+            }
+
+            // From feet
+            if (obstructed)
+            {
+                // Reset obstaucted bool
+                obstructed = false;
+
+                botRay = Physics.RaycastAll(transform.position + (Vector3.up * playerScript.collider.bounds.extents.y),
+                    Camera.main.transform.position - (transform.position + (Vector3.up * playerScript.collider.bounds.extents.y)));
+
+                // If ray hits an obstruction
+                for (int i = 0; i < botRay.Length; i++)
+                {
+                    if (botRay[i].collider.tag != "MainCamera" &&
+                        botRay[i].collider.tag != "Player" &&
+                        botRay[i].distance < cameraDistance)
+                    {
+                        // OBSTRUCTED
+                        obstructed = true;
+                        i = midRay.Length;
+                    }
+                }
+            }
+
+            // From head
+            if (obstructed)
+            {
+                topRay = Physics.RaycastAll(transform.position + (Vector3.up * playerScript.collider.bounds.extents.y),
+                    Camera.main.transform.position - (transform.position + (Vector3.up * playerScript.collider.bounds.extents.y)));
+
+                // If ray hits an obstruction
+                for (int i = 0; i < topRay.Length; i++)
+                {
+                    if (topRay[i].collider.tag != "MainCamera" &&
+                        topRay[i].collider.tag != "Player" &&
+                        topRay[i].distance < cameraDistance)
+                    {
+                        // Move camera to point of obstruction
+                        playerScript.camera.transform.position = topRay[i].point;
+                        i = midRay.Length;
+                    }
+                }
             }
         }
     }
