@@ -1084,6 +1084,7 @@ MonoBehaviour:
   mantleAnimSpeedMultiplier: 2
   climbDuration: 0.2
   climbAnimSpeedMultiplier: 2
+  inputBlockTime: 0.3
   camera: {fileID: 282840813}
   body: {fileID: 103198787}
   collider: {fileID: 1616343227}

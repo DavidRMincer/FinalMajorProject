@@ -154,7 +154,7 @@ public class Player_Controller : MonoBehaviour
                     playerScript.SetMovementState(MovementState.FALLING);
 
                 // Player slides
-                else if (Input.GetButtonDown("Crouch") &&
+                else if (Input.GetButton("Crouch") &&
                             playerScript.CanSlide())
                     playerScript.SetMovementState(MovementState.SLIDING);
 

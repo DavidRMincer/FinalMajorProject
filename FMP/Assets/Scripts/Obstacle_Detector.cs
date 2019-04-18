@@ -87,7 +87,15 @@ public class Obstacle_Detector : MonoBehaviour
 
             // Set action point if action started
             if (playerScript.ActionStarted())
+            {
+                // Face obstacle
+                Vector3 lookPos = hitPoint - playerObject.transform.position;
+                lookPos.y = 0.0f;
+                playerObject.transform.rotation = Quaternion.LookRotation(lookPos);
+
+                // Set points to move towards
                 SetActionPoints();
+            }
         }
     }
     
@@ -243,24 +251,31 @@ public class Obstacle_Detector : MonoBehaviour
         Debug.DrawRay(GetTopEdge(obstacle) + (transform.forward * depth / 2), Vector3.up * space, debugColour, 0.001f);
 
         // Can slide
-        playerScript.SetCanSlide(   botHeight > playerScript.GetCrouchHeight() &&
-                                    depth < playerScript.GetStandHeight());
+        if (obstacleBot.y <= playerObject.transform.position.y + playerScript.GetCrouchHeight() &&
+            obstacleBot.y >= playerObject.transform.position.y - playerScript.GetCrouchHeight())
+            playerScript.SetCanSlide(   botHeight > playerScript.GetCrouchHeight() &&
+                                        depth < playerScript.GetStandHeight());
 
-        // Can vault
-        playerScript.SetCanVault(   topHeight >= playerScript.GetCrouchHeight() &&
-                                    topHeight <= playerScript.GetStandHeight() &&
-                                    space >= playerScript.GetCrouchHeight() &&
-                                    depth < playerScript.GetWidth());
+        if (GetTopEdge(obstacle).y <= playerObject.transform.position.y + playerScript.GetCrouchHeight() &&
+            GetTopEdge(obstacle).y >= playerObject.transform.position.y - playerScript.GetCrouchHeight())
+        {
+            // Can vault
+            playerScript.SetCanVault(topHeight >= playerScript.GetCrouchHeight() &&
+                                        topHeight <= playerScript.GetStandHeight() &&
+                                        space >= playerScript.GetCrouchHeight() &&
+                                        depth < playerScript.GetWidth());
 
-        // Can mantle
-        playerScript.SetCanMantle(  topHeight >= playerScript.GetCrouchHeight() &&
-                                    topHeight <= playerScript.GetJumpHeight() &&
-                                    space > playerScript.GetCrouchHeight() &&
-                                    depth >= playerScript.GetWidth());
+            // Can mantle
+            playerScript.SetCanMantle(topHeight >= playerScript.GetCrouchHeight() &&
+                                        topHeight <= playerScript.GetJumpHeight() &&
+                                        space > playerScript.GetCrouchHeight() &&
+                                        depth >= playerScript.GetWidth());
+        }
 
         // Can climb
-        playerScript.SetCanClimb(   topHeight > playerScript.GetJumpHeight() &&
-                                    botHeight < playerScript.GetStandHeight());
+        else
+            playerScript.SetCanClimb(   topHeight > playerScript.GetJumpHeight() &&
+                                        botHeight < playerScript.GetStandHeight());
     }
     
     /////////////////////////////////////////////////////////////////

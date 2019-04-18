@@ -22,12 +22,14 @@ public class Player_Script : MonoBehaviour
                                 jumpHeight,
                                 vaultMidDuration,
                                 mantleMidDuration,
-                                currentActionTimer;
+                                currentActionTimer,
+                                currentInputBlockTimer;
     private bool                canSlide,
                                 canVault,
                                 canMantle,
                                 canClimb,
-                                actionStarted;
+                                actionStarted,
+                                inputBlocked;
     private Rigidbody           rb;
     private MovementState       currentMoveState;
     private StatePhase          currentStatePhase;
@@ -60,7 +62,8 @@ public class Player_Script : MonoBehaviour
                                 mantleSetupDuration,
                                 mantleAnimSpeedMultiplier,
                                 climbDuration,
-                                climbAnimSpeedMultiplier;
+                                climbAnimSpeedMultiplier,
+                                inputBlockTime;
     public Camera               camera;
     public GameObject           body;
     public CapsuleCollider      collider;
@@ -86,6 +89,7 @@ public class Player_Script : MonoBehaviour
 
         // Set default values
         actionStarted = false;
+        inputBlocked = false;
         currentMoveState = MovementState.STANDING;
 
         // Multiply animation speeds
@@ -354,6 +358,25 @@ public class Player_Script : MonoBehaviour
     }
 
     /////////////////////////////////////////////////////////////////
+    // Coroutine that blocks input for set time
+    /////////////////////////////////////////////////////////////////
+    private IEnumerator BlockInput()
+    {
+        // Block input
+        inputBlocked = true;
+
+        // Countdown
+        for (currentInputBlockTimer = 0.0f; currentInputBlockTimer < inputBlockTime; currentInputBlockTimer += Time.deltaTime)
+        {
+            Debug.Log(inputBlocked);
+            yield return new WaitForSeconds(Time.deltaTime);
+        }
+
+        // Unblock input
+        inputBlocked = false;
+    }
+
+    /////////////////////////////////////////////////////////////////
     // Sets all action bools to false
     /////////////////////////////////////////////////////////////////
     internal void ResetActions()
@@ -385,36 +408,40 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     public void Move(float x, float z)
     {
-        Vector3 newVelocity = Vector3.zero;
-
-        // Set current speed to walk speed
-        float moveSpeed = currentSpeed * Time.deltaTime;
-
-        // ON FOOT
-        if (currentMoveState != MovementState.CLIMBING)
+        // If input not blocked
+        if (!inputBlocked)
         {
-            // Calculate new rotation
-            float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
-            angle += Mathf.Atan2(transform.position.x - camera.transform.position.x,
-                                    transform.position.z - camera.transform.position.z) * Mathf.Rad2Deg;
+            Vector3 newVelocity = Vector3.zero;
 
-            // Apply rotation
-            transform.rotation = Quaternion.Euler(Vector3.up * angle);
+            // Set current speed to walk speed
+            float moveSpeed = currentSpeed * Time.deltaTime;
 
-            // Calculate velocity
-            newVelocity = transform.forward * moveSpeed;
-            newVelocity.y = rb.velocity.y;
+            // ON FOOT
+            if (currentMoveState != MovementState.CLIMBING)
+            {
+                // Calculate new rotation
+                float angle = Mathf.Atan2(x, z) * Mathf.Rad2Deg;
+                angle += Mathf.Atan2(transform.position.x - camera.transform.position.x,
+                                        transform.position.z - camera.transform.position.z) * Mathf.Rad2Deg;
+
+                // Apply rotation
+                transform.rotation = Quaternion.Euler(Vector3.up * angle);
+
+                // Calculate velocity
+                newVelocity = transform.forward * moveSpeed;
+                newVelocity.y = rb.velocity.y;
+            }
+            // CLIMBING
+            else
+            {
+                // Calculate velocity
+                newVelocity += transform.right * (x * moveSpeed);
+                newVelocity += transform.up * (z * moveSpeed);
+            }
+
+            // Apply velocity
+            rb.velocity = newVelocity;
         }
-        // CLIMBING
-        else
-        {
-            // Calculate velocity
-            newVelocity += transform.right * (x * moveSpeed);
-            newVelocity += transform.up * (z * moveSpeed);
-        }
-
-        // Apply velocity
-        rb.velocity = newVelocity;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -425,6 +452,7 @@ public class Player_Script : MonoBehaviour
         // If jump inputted and player grounded
         if (CanJump())
         {
+            // Switch to available action
             if (CanVault())
             {
                 SetMovementState(MovementState.VAULTING);
@@ -441,7 +469,20 @@ public class Player_Script : MonoBehaviour
             }
 
             // Apply upward jump force
-            else rb.AddForce(Vector3.up * jumpForce);
+            else
+                rb.AddForce(Vector3.up * jumpForce);
+        }
+        // Jump of wall if climbing
+        else if (currentMoveState == MovementState.CLIMBING)
+        {
+            // Turn away from wall
+            transform.Rotate(0.0f, 180.0f, 0.0f);
+            // Apply jump force
+            rb.AddForce((transform.forward + Vector3.up) * jumpForce);
+            // Block input
+            StartCoroutine("BlockInput");
+
+            SetMovementState(MovementState.JUMPING);
         }
     }
 
