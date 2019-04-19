@@ -23,7 +23,8 @@ public class Player_Script : MonoBehaviour
                                 vaultMidDuration,
                                 mantleMidDuration,
                                 currentActionTimer,
-                                currentInputBlockTimer;
+                                currentInputBlockTimer,
+                                inputSpeed;
     private bool                canSlide,
                                 canVault,
                                 canMantle,
@@ -63,10 +64,11 @@ public class Player_Script : MonoBehaviour
                                 mantleAnimSpeedMultiplier,
                                 climbDuration,
                                 climbAnimSpeedMultiplier,
-                                inputBlockTime;
-    public Camera               camera;
+                                inputBlockTime,
+                                minimumInputSpeed;
+    public new Camera           camera;
     public GameObject           body;
-    public CapsuleCollider      collider;
+    public new CapsuleCollider  collider;
 
     /////////////////////////////////////////////////////////////////
     // Runs on start up
@@ -291,17 +293,17 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void LateUpdate()
     {
-        // Update climbing animations
-        if (currentMoveState == MovementState.CLIMBING)
-        {
-            // Pause if not moving
-            if (Input.GetAxis("Horizontal") == 0.0f &&
-                Input.GetAxis("Vertical") == 0.0f)
-                playerAnimation["Climbing"].speed = 0.0f;
-            // Play if climbing
-            else
-                playerAnimation["Climbing"].speed = climbAnimSpeedMultiplier;
-        }
+        Debug.Log(inputSpeed);
+
+        // Update animation speed
+        if (currentMoveState == MovementState.WALKING)
+            playerAnimation["Walking"].speed = walkAnimSpeedMultiplier * inputSpeed;
+        else if (currentMoveState == MovementState.RUNNING)
+            playerAnimation["Running"].speed = runAnimSpeedMultiplier * inputSpeed;
+        else if (currentMoveState == MovementState.SNEAKING)
+            playerAnimation["Sneaking"].speed = sneakAnimSpeedMultiplier * inputSpeed;
+        else if (currentMoveState == MovementState.CLIMBING)
+            playerAnimation["Climbing"].speed = climbAnimSpeedMultiplier * inputSpeed;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -368,7 +370,10 @@ public class Player_Script : MonoBehaviour
         // Countdown
         for (currentInputBlockTimer = 0.0f; currentInputBlockTimer < inputBlockTime; currentInputBlockTimer += Time.deltaTime)
         {
-            Debug.Log(inputBlocked);
+            // Unblock once landed
+            if (CanJump())
+                currentInputBlockTimer = inputBlockTime;
+
             yield return new WaitForSeconds(Time.deltaTime);
         }
 
@@ -412,9 +417,17 @@ public class Player_Script : MonoBehaviour
         if (!inputBlocked)
         {
             Vector3 newVelocity = Vector3.zero;
+            inputSpeed = new Vector2(x, z).magnitude;
+
+            // Restrict input speed
+            if (inputSpeed < minimumInputSpeed &&
+                inputSpeed != 0.0f)
+                inputSpeed = minimumInputSpeed;
+            else if (inputSpeed > 1.0f)
+                inputSpeed = 1.0f;
 
             // Set current speed to walk speed
-            float moveSpeed = currentSpeed * Time.deltaTime;
+            float moveSpeed = currentSpeed * inputSpeed * Time.deltaTime;
 
             // ON FOOT
             if (currentMoveState != MovementState.CLIMBING)

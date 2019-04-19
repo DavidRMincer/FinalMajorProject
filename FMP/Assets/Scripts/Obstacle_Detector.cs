@@ -13,6 +13,7 @@ public class Obstacle_Detector : MonoBehaviour
     /////////////////////////////////////////////////////////////////
 
     public GameObject       playerObject;
+    public float            reach;
     public Color            debugColour,
                             actionColour;
 
@@ -275,7 +276,8 @@ public class Obstacle_Detector : MonoBehaviour
         // Can climb
         else
             playerScript.SetCanClimb(   topHeight > playerScript.GetJumpHeight() &&
-                                        botHeight < playerScript.GetStandHeight());
+                                        botHeight < playerScript.GetStandHeight() &&
+                                        (hitPoint - playerObject.transform.position).magnitude <= reach);
     }
     
     /////////////////////////////////////////////////////////////////
@@ -356,7 +358,7 @@ public class Obstacle_Detector : MonoBehaviour
 
             case MovementState.CLIMBING:
                 // Set start point
-                playerScript.startActionPoint = hitPoint - (playerObject.transform.forward * playerScript.GetWidth() / 4);
+                playerScript.startActionPoint = hitPoint - (playerObject.transform.forward * playerScript.GetWidth() * 0.75f);
                 playerScript.startActionPoint.y = hitPoint.y + playerScript.GetCrouchHeight();
                 Debug.DrawRay(  playerScript.transform.position,
                                 playerScript.startActionPoint - playerScript.transform.position,

@@ -832,6 +832,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerObject: {fileID: 1801999034}
+  reach: 1
   debugColour: {r: 1, g: 0.96754205, b: 0, a: 1}
   actionColour: {r: 1, g: 0.25943398, b: 0.71965164, a: 1}
 --- !u!1 &1616343225
@@ -1066,7 +1067,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   walkSpeed: 300
-  walkAnimSpeedMultiplier: 2
+  walkAnimSpeedMultiplier: 3
   runSpeed: 600
   runAnimSpeedMultiplier: 2
   sneakSpeed: 150
@@ -1085,6 +1086,7 @@ MonoBehaviour:
   climbDuration: 0.2
   climbAnimSpeedMultiplier: 2
   inputBlockTime: 0.3
+  minimumInputSpeed: 0.4
   camera: {fileID: 282840813}
   body: {fileID: 103198787}
   collider: {fileID: 1616343227}
@@ -1251,7 +1253,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 400058, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.003
+      value: -1.037
       objectReference: {fileID: 0}
     - target: {fileID: 400058, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
       propertyPath: m_LocalPosition.z
