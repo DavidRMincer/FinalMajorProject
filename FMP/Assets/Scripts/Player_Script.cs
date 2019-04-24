@@ -68,6 +68,8 @@ public class Player_Script : MonoBehaviour
                                 minimumInputSpeed;
     public new Camera           camera;
     public GameObject           body;
+    public GameObject[]         hands,
+                                feet;
     public new CapsuleCollider  collider;
 
     /////////////////////////////////////////////////////////////////
@@ -113,6 +115,7 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
+        Debug.Log(CanJump());
         // reset action started
         if (actionStarted)
             actionStarted = false;
@@ -252,23 +255,24 @@ public class Player_Script : MonoBehaviour
                 // Set current speed
                 currentSpeed = sneakSpeed;
 
-                switch (currentStatePhase)
+                // Moving to start position
+                if (currentStatePhase == StatePhase.START)
                 {
-                    case StatePhase.START:
-                        if (currentActionTimer < climbDuration)
-                        {
-                            transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbDuration);
-                            currentActionTimer += Time.deltaTime;
-                        }
-                        else
-                        {
-                            currentStatePhase = StatePhase.END;
-                            currentActionTimer = 0.0f;
-                        }
-                        break;
-
-                    default:
-                        break;
+                    if (currentActionTimer < climbDuration)
+                    {
+                        transform.position = Vector3.Lerp(actionOrigin, startActionPoint, currentActionTimer / climbDuration);
+                        currentActionTimer += Time.deltaTime;
+                    }
+                    else
+                    {
+                        currentStatePhase = StatePhase.END;
+                        currentActionTimer = 0.0f;
+                    }
+                }
+                // While climbing
+                else
+                {
+                    //DO STUFF
                 }
                 break;
 
@@ -293,8 +297,6 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void LateUpdate()
     {
-        Debug.Log(inputSpeed);
-
         // Update animation speed
         if (currentMoveState == MovementState.WALKING)
             playerAnimation["Walking"].speed = walkAnimSpeedMultiplier * inputSpeed;
@@ -397,7 +399,20 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     internal bool CanJump()
     {
-        return Physics.Raycast(transform.position, -Vector3.up, (collider.height / 2) + 0.1f);
+        RaycastHit[] hits = Physics.RaycastAll(transform.position, - Vector3.up, (collider.height / 2) + 0.1f);
+
+        Debug.DrawLine(transform.position, transform.position - (Vector3.up * ((collider.height / 2) + 0.1f)), Color.red);
+
+        for (int i = 0; i < hits.Length; ++i)
+        {
+            if (hits[i].collider.tag != "Player" &&
+                hits[i].collider.tag != "MainCamera")
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /////////////////////////////////////////////////////////////////
@@ -483,7 +498,10 @@ public class Player_Script : MonoBehaviour
 
             // Apply upward jump force
             else
+            {
+                SetMovementState(MovementState.JUMPING);
                 rb.AddForce(Vector3.up * jumpForce);
+            }
         }
         // Jump of wall if climbing
         else if (currentMoveState == MovementState.CLIMBING)
