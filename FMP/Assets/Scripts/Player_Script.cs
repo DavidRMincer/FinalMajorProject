@@ -65,7 +65,8 @@ public class Player_Script : MonoBehaviour
                                 climbDuration,
                                 climbAnimSpeedMultiplier,
                                 inputBlockTime,
-                                minimumInputSpeed;
+                                minimumInputSpeed,
+                                distanceToGround;
     public new Camera           camera;
     public GameObject           body;
     public GameObject[]         hands,
@@ -115,7 +116,9 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void FixedUpdate()
     {
-        Debug.Log(CanJump());
+        if (!CanJump())
+            Debug.Log(CanJump());
+
         // reset action started
         if (actionStarted)
             actionStarted = false;
@@ -399,7 +402,7 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     internal bool CanJump()
     {
-        RaycastHit[] hits = Physics.RaycastAll(transform.position, - Vector3.up, (collider.height / 2) + 0.1f);
+        RaycastHit[] hits = Physics.RaycastAll(transform.position, - Vector3.up, (collider.height / 2) + distanceToGround);
 
         Debug.DrawLine(transform.position, transform.position - (Vector3.up * ((collider.height / 2) + 0.1f)), Color.red);
 
@@ -551,18 +554,23 @@ public class Player_Script : MonoBehaviour
         else collider.enabled = true;
 
         // Set collider height
-        if (currentMoveState == MovementState.CROUCHING ||
-            currentMoveState == MovementState.SNEAKING)
+        if ((currentMoveState == MovementState.CROUCHING ||
+            currentMoveState == MovementState.SNEAKING)         && (collider.height != crouchHeight))
         {
             collider.height = crouchHeight;
-            collider.transform.position = transform.position - (Vector3.up * crouchHeight * 0.51f);
+            collider.transform.position = transform.position - (Vector3.up * (standHeight * 0.75f));
+            // Update body position
+            body.transform.position = collider.transform.position + (Vector3.up * (collider.bounds.extents.y));
         }
-        else
+        else if (   (currentMoveState != MovementState.CROUCHING &&
+                    currentMoveState != MovementState.SNEAKING)     && collider.height != standHeight)
         {
             collider.height = standHeight;
-            collider.transform.position = transform.position;
+            collider.transform.position = transform.position - (Vector3.up * (crouchHeight));
+            // Update body position
+            body.transform.position = collider.transform.position;
         }
-
+        
         // Update animation
         UpdateAnimation();
     }
