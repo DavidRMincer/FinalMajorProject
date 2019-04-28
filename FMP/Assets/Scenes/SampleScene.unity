@@ -734,22 +734,6 @@ Animator:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorControllerStateOnDisable: 0
---- !u!1 &1126332336 stripped
-GameObject:
-  m_PrefabParentObject: {fileID: 100054, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-  m_PrefabInternal: {fileID: 1998266010}
---- !u!135 &1126332338
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1126332336}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.08
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1224717708
 GameObject:
   m_ObjectHideFlags: 0
@@ -851,22 +835,6 @@ MonoBehaviour:
   reach: 1
   debugColour: {r: 1, g: 0.96754205, b: 0, a: 1}
   actionColour: {r: 1, g: 0.25943398, b: 0.71965164, a: 1}
---- !u!1 &1237651349 stripped
-GameObject:
-  m_PrefabParentObject: {fileID: 100030, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-  m_PrefabInternal: {fileID: 1998266010}
---- !u!135 &1237651351
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1237651349}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.08
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1616343225
 GameObject:
   m_ObjectHideFlags: 0
@@ -890,7 +858,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1616343225}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -1, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1801999039}
@@ -908,38 +876,6 @@ CapsuleCollider:
   m_Radius: 0.32
   m_Height: 2
   m_Direction: 1
-  m_Center: {x: 0, y: 1, z: 0}
---- !u!1 &1677365434 stripped
-GameObject:
-  m_PrefabParentObject: {fileID: 100020, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-  m_PrefabInternal: {fileID: 1998266010}
---- !u!135 &1677365436
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1677365434}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.08
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &1705012401 stripped
-GameObject:
-  m_PrefabParentObject: {fileID: 100042, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-  m_PrefabInternal: {fileID: 1998266010}
---- !u!135 &1705012403
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1705012401}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.08
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1772887920
 GameObject:
@@ -1151,11 +1087,9 @@ MonoBehaviour:
   climbAnimSpeedMultiplier: 2
   inputBlockTime: 0.3
   minimumInputSpeed: 0.4
-  distanceToGround: 0.5
+  distanceFromGround: 0.1
   camera: {fileID: 282840813}
   body: {fileID: 103198787}
-  hands: []
-  feet: []
   collider: {fileID: 1616343227}
 --- !u!114 &1801999041
 MonoBehaviour:
@@ -1485,22 +1419,6 @@ Prefab:
     - target: {fileID: 100010, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
       propertyPath: m_TagString
       value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 100054, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-      propertyPath: m_Name
-      value: FootRight
-      objectReference: {fileID: 0}
-    - target: {fileID: 100042, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-      propertyPath: m_Name
-      value: FootLeft
-      objectReference: {fileID: 0}
-    - target: {fileID: 100030, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-      propertyPath: m_Name
-      value: HandRight
-      objectReference: {fileID: 0}
-    - target: {fileID: 100020, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}
-      propertyPath: m_Name
-      value: HandLeft
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 1dee3cddbbb9093448bf5335e15aae00, type: 3}

@@ -50,7 +50,6 @@ public class Player_Controller : MonoBehaviour
     public void PlayerInput()
     {
         // EXIT
-
         if (Input.GetButtonDown("Exit"))
             Application.Quit();
 
@@ -220,6 +219,28 @@ public class Player_Controller : MonoBehaviour
 
             default:
                 break;
+        }
+
+        // FOR TESTING PURPOSES ONLY!
+
+        if (Input.GetKeyDown("1"))
+        {
+            playerScript.SetMovementState(MovementState.VAULTING);
+        }
+
+        if (Input.GetKeyDown("2"))
+        {
+            playerScript.SetMovementState(MovementState.SLIDING);
+        }
+
+        if (Input.GetKeyDown("3"))
+        {
+            playerScript.SetMovementState(MovementState.MANTLING);
+        }
+
+        if (Input.GetKeyDown("4"))
+        {
+            playerScript.SetMovementState(MovementState.CLIMBING);
         }
     }
 
