@@ -294,6 +294,7 @@ public class Player_Script : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void LateUpdate()
     {
+        Debug.Log(canVault);
         // Update animation speed
         if (currentMoveState == MovementState.WALKING)
             playerAnimation["Walking"].speed = walkAnimSpeedMultiplier * inputSpeed;

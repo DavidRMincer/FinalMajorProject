@@ -261,13 +261,13 @@ public class Obstacle_Detector : MonoBehaviour
             GetTopEdge(obstacle).y >= playerObject.transform.position.y - playerScript.GetCrouchHeight())
         {
             // Can vault
-            playerScript.SetCanVault(topHeight >= playerScript.GetCrouchHeight() &&
+            playerScript.SetCanVault(   topHeight >= playerScript.GetCrouchHeight() / 2 &&
                                         topHeight <= playerScript.GetStandHeight() &&
                                         space >= playerScript.GetCrouchHeight() &&
                                         depth < playerScript.GetWidth());
 
             // Can mantle
-            playerScript.SetCanMantle(topHeight >= playerScript.GetCrouchHeight() &&
+            playerScript.SetCanMantle(  topHeight >= playerScript.GetCrouchHeight() &&
                                         topHeight <= playerScript.GetJumpHeight() &&
                                         space > playerScript.GetCrouchHeight() &&
                                         depth >= playerScript.GetWidth());

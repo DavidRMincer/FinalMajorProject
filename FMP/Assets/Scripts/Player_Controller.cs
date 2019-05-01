@@ -20,8 +20,9 @@ public class Player_Controller : MonoBehaviour
     /////////////////////////////////////////////////////////////////
     private void Start()
     {
-        // Lock cursor
+        // Disable cursor
         Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         // Set player script
         playerScript = gameObject.GetComponent<Player_Script>();
